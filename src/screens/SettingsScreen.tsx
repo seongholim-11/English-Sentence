@@ -1,10 +1,12 @@
 import * as Speech from 'expo-speech';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, Tab } from '../components/BottomNav';
 import { Txt } from '../components/Txt';
 import { GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES } from '../progress';
+import { Reminder, applyReminder, reminderSupported, timeLabel } from '../reminder';
 import { colors } from '../theme';
 
 const PRESETS = [10, 20, 30, 50, 100];
@@ -23,6 +25,23 @@ export function SettingsScreen({
 }) {
   const insets = useSafeAreaInsets();
   const goal = progress.goal;
+  const reminder = progress.prefs.reminder;
+  const [reminderNote, setReminderNote] = useState('');
+
+  const changeReminder = async (next: Reminder) => {
+    setReminderNote('');
+    const ok = await applyReminder(next).catch(() => false);
+    if (next.on && !ok) {
+      onSetPrefs({ reminder: { ...next, on: false } });
+      setReminderNote(reminderSupported ? '알림 권한이 꺼져 있어요. 기기 설정에서 허용해 주세요.' : '알림은 모바일 앱에서만 쓸 수 있어요.');
+      return;
+    }
+    onSetPrefs({ reminder: next });
+  };
+  const shift = (min: number) => {
+    const total = (reminder.hour * 60 + reminder.minute + min + 1440) % 1440;
+    changeReminder({ ...reminder, hour: Math.floor(total / 60), minute: total % 60 });
+  };
 
   return (
     <View style={styles.root}>
@@ -131,6 +150,40 @@ export function SettingsScreen({
               thumbColor={colors.white}
             />
           </View>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.infoRow}>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Txt size={17} weight={600}>
+                복습 알림
+              </Txt>
+              <Txt size={13} color={colors.muted}>
+                정한 시각에 매일 복습하라고 알려 줘요.
+              </Txt>
+            </View>
+            <Switch
+              accessibilityLabel="복습 알림"
+              value={reminder.on}
+              onValueChange={(v) => changeReminder({ ...reminder, on: v })}
+              trackColor={{ true: colors.accent, false: colors.borderStrong }}
+              thumbColor={colors.white}
+            />
+          </View>
+          {reminder.on && (
+            <View style={styles.stepper}>
+              <Stepper label="30분 일찍" sign="−" disabled={false} onPress={() => shift(-30)} />
+              <Txt size={26} weight={700} style={styles.tight} tabular>
+                {timeLabel(reminder)}
+              </Txt>
+              <Stepper label="30분 늦게" sign="+" disabled={false} onPress={() => shift(30)} />
+            </View>
+          )}
+          {reminderNote !== '' && (
+            <Txt size={13} color="#D4452F">
+              {reminderNote}
+            </Txt>
+          )}
         </View>
 
         <View style={styles.card}>

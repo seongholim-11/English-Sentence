@@ -1,3 +1,5 @@
+import { moreDialogues } from './more/dialogues';
+
 export type Line = {
   who: 'A' | 'B';
   speaker: string;
@@ -16,7 +18,7 @@ export type Dialogue = {
 const A = (speaker: string, en: string, ko: string): Line => ({ who: 'A', speaker, en, ko });
 const B = (en: string, ko: string): Line => ({ who: 'B', speaker: 'Me', en, ko });
 
-export const dialogues: Dialogue[] = [
+const baseDialogues: Dialogue[] = [
   {
     id: 'cafe',
     title: '카페에서 주문하기',
@@ -174,3 +176,5 @@ export const dialogues: Dialogue[] = [
     ],
   },
 ];
+
+export const dialogues: Dialogue[] = [...baseDialogues, ...moreDialogues];

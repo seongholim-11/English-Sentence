@@ -1,4 +1,6 @@
 import { frequencyParts } from './frequency';
+import { phrasalRows } from './more/phrasal';
+import { sentenceRows } from './more/sentences';
 
 export type Card = {
   id: string;
@@ -75,7 +77,7 @@ const conversationWords: Card[] = [
 ];
 
 // 원어민이 매일 쓰는 구동사
-const phrasal: Card[] = [
+const basePhrasal: Card[] = [
   card('phrasal verb', 'put off', 'put + off', '미루다, 연기하다', 'We had to put off the meeting until Friday.', '회의를 금요일로 미뤄야 했어요.'),
   card('phrasal verb', 'figure out', 'figure + out', '알아내다, 이해하다', "I can't figure out how this works.", '이게 어떻게 되는 건지 모르겠어.'),
   card('phrasal verb', 'come across', 'come + across', '우연히 발견하다, 마주치다', 'I came across an old photo of us.', '우리 옛날 사진을 우연히 찾았어.'),
@@ -114,8 +116,13 @@ const phrasal: Card[] = [
   card('phrasal verb', 'head out', 'head + out', '나가다, 출발하다', "I'm going to head out now. See you tomorrow.", '나 이제 가 볼게. 내일 봐.'),
 ];
 
+const phrasal: Card[] = [
+  ...basePhrasal,
+  ...phrasalRows.map(([front, back, ex, exKo]) => card('phrasal verb', front, front.split(' ').join(' + '), back, ex, exKo)),
+];
+
 // 한국어 → 영어 말하기: 위 단어·구동사로 만든 문장
-const sentences: Card[] = [
+const baseSentences: Card[] = [
   card('한국어 → 영어', '지금은 그 얘기 안 하고 싶어.', '영어로 말해 보세요', "I'd rather not get into that right now.", 'get into = (이야기·주제를) 꺼내다', "I'd rather not ~ : 차라리 ~하지 않을래"),
   card('한국어 → 영어', '무슨 일 생기면 알려줘.', '영어로 말해 보세요', 'Let me know if anything comes up.', 'come up = (일이) 생기다', '일정·문제 모두에 쓸 수 있어요.'),
   card('한국어 → 영어', '그런 뜻으로 한 말 아니야.', '영어로 말해 보세요', "I didn't mean it that way.", 'mean it = 진심으로 그 뜻이다', '오해를 풀 때 자주 쓰는 표현'),
@@ -148,6 +155,11 @@ const sentences: Card[] = [
   card('한국어 → 영어', '나 이제 가 볼게.', '영어로 말해 보세요', "I'm going to head out.", 'head out = 나가다, 출발하다', "I'm gonna head out. 처럼 줄여 말해요"),
   card('한국어 → 영어', '그 일은 털어내는 데 시간이 좀 걸렸어.', '영어로 말해 보세요', 'It took me a while to get over it.', 'get over = 극복하다', 'It took me a while to ~ : ~하는 데 시간이 걸렸다'),
   card('한국어 → 영어', '실망시키지 않을게.', '영어로 말해 보세요', "I won't let you down.", 'let down = 실망시키다', '약속할 때 자주 쓰는 말'),
+];
+
+const sentences: Card[] = [
+  ...baseSentences,
+  ...sentenceRows.map(([ko, en, note, tip]) => card('한국어 → 영어', ko, '영어로 말해 보세요', en, note, tip)),
 ];
 
 // 영단어 덱: 회화 빈도순 단어 다음에, 거기 없는 회화 단어를 이어 붙인다

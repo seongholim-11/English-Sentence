@@ -62,7 +62,7 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
       </View>
       <Bar pct={(pos / total) * 100} color={colors.accent} track={colors.border} height={6} />
 
-      <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.card}>
+      <View style={styles.card}>
         <View style={styles.cardTop}>
           <Chip label={card.tag} bg={meta.soft} fg={meta.deep} />
           <Pressable
@@ -75,6 +75,7 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
             <StarIcon size={22} filled={isFavorite(card.id)} color={isFavorite(card.id) ? '#F2A91B' : colors.muted} />
           </Pressable>
         </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.tapArea}>
         <View style={styles.front}>
           <Txt size={meta.bigFront ? 44 : 28} weight={700} lineHeight={1.2} style={{ letterSpacing: meta.bigFront ? -0.88 : -0.56 }}>
             {card.front}
@@ -101,6 +102,7 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
             </View>
           </View>
         ) : null}
+        </Pressable>
         <View style={styles.cardButtons}>
             <Pressable
               accessibilityRole="button"
@@ -127,7 +129,7 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
             </Txt>
           </Pressable>
         </View>
-      </Pressable>
+      </View>
 
       <View style={styles.actions}>
         <Btn label="다시 볼래요" onPress={() => onMark(false)} icon={<AgainIcon />} style={{ flex: 1 }} />
@@ -175,6 +177,7 @@ const styles = createStyles(() => ({
     borderRadius: 28,
     backgroundColor: colors.accentTint,
   },
+  tapArea: { flex: 1, minHeight: 0, gap: 12 },
   reveal: { backgroundColor: colors.exampleBg },
   cardButtons: { gap: 8 },
   front: { flex: 1, justifyContent: 'center', gap: 10 },

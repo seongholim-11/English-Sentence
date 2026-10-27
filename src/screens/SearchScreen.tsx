@@ -96,21 +96,24 @@ export function SearchScreen({ progress, initialFavorites, onToggleFavorite, onB
           const expanded = open === key;
           const fav = isFavorite(progress, item.deck, item.card.id);
           return (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setOpen(expanded ? null : key)}
-              style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
-            >
+            <View style={styles.row}>
               <View style={styles.rowTop}>
-                <View style={[styles.dot, { backgroundColor: meta.color }]} />
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Txt size={16} weight={600} numberOfLines={expanded ? undefined : 1}>
-                    {item.card.front}
-                  </Txt>
-                  <Txt size={13} color={colors.muted} numberOfLines={expanded ? undefined : 1}>
-                    {item.card.back}
-                  </Txt>
-                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded }}
+                  onPress={() => setOpen(expanded ? null : key)}
+                  style={({ pressed }) => [styles.rowMain, pressed && { opacity: 0.85 }]}
+                >
+                  <View style={[styles.dot, { backgroundColor: meta.color }]} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Txt size={16} weight={600} numberOfLines={expanded ? undefined : 1}>
+                      {item.card.front}
+                    </Txt>
+                    <Txt size={13} color={colors.muted} numberOfLines={expanded ? undefined : 1}>
+                      {item.card.back}
+                    </Txt>
+                  </View>
+                </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={fav ? '즐겨찾기 해제' : '즐겨찾기'}
@@ -136,7 +139,7 @@ export function SearchScreen({ progress, initialFavorites, onToggleFavorite, onB
                   </Pressable>
                 </View>
               )}
-            </Pressable>
+            </View>
           );
         }}
       />
@@ -195,6 +198,7 @@ const styles = createStyles(() => ({
     borderRadius: 16,
   },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   iconBtn: {
     width: 34,

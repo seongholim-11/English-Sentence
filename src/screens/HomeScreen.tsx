@@ -1,14 +1,15 @@
-import { ReactNode, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bar } from '../components/Bits';
-import { ArrowRightIcon, DecksIcon, FlameIcon, HomeIcon, SettingsIcon, StatsIcon } from '../components/Icons';
+import { BottomNav, Tab } from '../components/BottomNav';
+import { ArrowRightIcon, FlameIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { DeckId, DeckMeta, cardDecks, deckMeta, decks, setCount } from '../data/decks';
 import { dialogues } from '../data/dialogues';
 import { Progress, SetRef, roundState, todayCount, visibleStreak } from '../progress';
-import { DAILY_GOAL, colors } from '../theme';
+import { colors } from '../theme';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -30,7 +31,7 @@ const continueOf = (p: Progress): { label: string; set: SetRef | null; deck: Dec
   return { label: `${name} 공부 시작`, set: null, deck: p.lastDeck };
 };
 
-const deckStats = (p: Progress, d: DeckMeta) => {
+export const deckStats = (p: Progress, d: DeckMeta) => {
   if (d.id === 'dialogue') {
     const total = dialogues.length;
     return { pct: (p.dialogue.pos / total) * 100, progress: `${p.dialogue.pos} / ${total}편` };
@@ -44,15 +45,15 @@ type Props = {
   progress: Progress;
   onOpenDeck: (id: DeckId) => void;
   onOpenSet: (s: SetRef) => void;
+  onNavigate: (t: Tab) => void;
 };
 
-export function HomeScreen({ progress, onOpenDeck, onOpenSet }: Props) {
+export function HomeScreen({ progress, onOpenDeck, onOpenSet, onNavigate }: Props) {
   const insets = useSafeAreaInsets();
   const seen = todayCount(progress);
-  const left = Math.max(0, DAILY_GOAL - seen);
+  const goal = progress.goal;
+  const left = Math.max(0, goal - seen);
   const next = continueOf(progress);
-
-  const soon = () => Alert.alert('준비 중이에요', '지금은 홈에서 덱을 골라 공부할 수 있어요.');
 
   return (
     <View style={styles.root}>
@@ -83,7 +84,7 @@ export function HomeScreen({ progress, onOpenDeck, onOpenSet }: Props) {
               <Txt size={34} weight={700} color={colors.white} style={styles.tight} tabular>
                 {String(seen)}
                 <Txt size={18} weight={500} color={colors.heroFaint}>
-                  {` / ${DAILY_GOAL}`}
+                  {` / ${goal}`}
                 </Txt>
               </Txt>
             </View>
@@ -91,7 +92,7 @@ export function HomeScreen({ progress, onOpenDeck, onOpenSet }: Props) {
               {left > 0 ? `목표까지 ${left}장` : '오늘 목표 달성!'}
             </Txt>
           </View>
-          <Bar pct={(seen / DAILY_GOAL) * 100} color={colors.accent} track="rgba(255,255,255,0.14)" height={6} />
+          <Bar pct={(seen / goal) * 100} color={colors.accent} track="rgba(255,255,255,0.14)" height={6} />
           <Pressable
             accessibilityRole="button"
             onPress={() => (next.set ? onOpenSet(next.set) : onOpenDeck(next.deck))}
@@ -107,12 +108,7 @@ export function HomeScreen({ progress, onOpenDeck, onOpenSet }: Props) {
         <DeckSection title="내 덱" note="탭해서 바로 시작" list={decks} progress={progress} onOpenDeck={onOpenDeck} />
       </View>
 
-      <View style={[styles.nav, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <NavTab label="홈" active icon={<HomeIcon color={colors.ink} />} />
-        <NavTab label="덱" onPress={soon} icon={<DecksIcon />} />
-        <NavTab label="기록" onPress={soon} icon={<StatsIcon />} />
-        <NavTab label="설정" onPress={soon} icon={<SettingsIcon />} />
-      </View>
+      <BottomNav active="home" onNavigate={onNavigate} />
     </View>
   );
 }
@@ -218,17 +214,6 @@ function DeckSection({
   );
 }
 
-function NavTab({ label, icon, active, onPress }: { label: string; icon: ReactNode; active?: boolean; onPress?: () => void }) {
-  return (
-    <Pressable accessibilityRole="tab" accessibilityState={{ selected: !!active }} onPress={onPress} style={styles.tab}>
-      {icon}
-      <Txt size={11} weight={active ? 600 : 500} color={active ? colors.ink : colors.navMuted}>
-        {label}
-      </Txt>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 22 },
@@ -272,14 +257,4 @@ const styles = StyleSheet.create({
   mono: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   monoSmall: { width: 30, height: 30, borderRadius: 10 },
   deckBottom: { gap: 6, marginTop: 'auto' },
-  nav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 8,
-    paddingHorizontal: 12,
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  tab: { width: 72, height: 52, alignItems: 'center', justifyContent: 'center', gap: 3 },
 });

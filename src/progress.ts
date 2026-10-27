@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CardDeckId, DeckId, cardDecks, setCards, setCount } from './data/decks';
 import { dialogues } from './data/dialogues';
+import { DAILY_GOAL } from './theme';
 
 // 한 세트의 현재 회독: queue는 이번 회독에 도는 카드 id 목록
 export type RoundState = {
@@ -25,6 +26,10 @@ export type Progress = {
   lastDeck: DeckId;
   lastSet: SetRef | null;
   today: { date: string; count: number };
+  // 날짜별로 본 카드 수 (기록 화면). 최근 기록만 남긴다
+  history: Record<string, number>;
+  // 하루 목표 카드 수 (설정 화면에서 바꾼다)
+  goal: number;
   streak: number;
   lastStudyDate: string | null;
 };
@@ -55,6 +60,12 @@ const yesterdayKey = () => {
   return dateKey(d);
 };
 
+export const GOAL_MIN = 5;
+export const GOAL_MAX = 200;
+const clampGoal = (n: number) => Math.min(GOAL_MAX, Math.max(GOAL_MIN, Math.round(Number(n)) || DAILY_GOAL));
+
+const HISTORY_DAYS = 90;
+
 const initialProgress = (): Progress => ({
   sets: {},
   mastered: Object.fromEntries(CARD_DECKS.map((d) => [d, []])) as unknown as Record<CardDeckId, string[]>,
@@ -62,6 +73,8 @@ const initialProgress = (): Progress => ({
   lastDeck: 'phrasal',
   lastSet: null,
   today: { date: dateKey(), count: 0 },
+  history: {},
+  goal: DAILY_GOAL,
   streak: 0,
   lastStudyDate: null,
 });
@@ -91,20 +104,39 @@ const sanitize = (raw: Partial<Progress>): Progress => {
   p.dialogue = { ...base.dialogue, ...raw.dialogue };
   p.dialogue.pos = Math.min(p.dialogue.pos, dialogues.length - 1);
   if (p.today.date !== dateKey()) p.today = { date: dateKey(), count: 0 };
+  p.history = { ...(raw.history ?? {}) };
+  // 기록 화면이 생기기 전에 공부한 오늘 분량도 반영한다
+  if (raw.today?.date === p.today.date) p.history[p.today.date] = Math.max(p.history[p.today.date] ?? 0, p.today.count);
+  p.goal = clampGoal(raw.goal ?? DAILY_GOAL);
   return p;
 };
 
 // 하루에 한 번 이상 공부하면 연속 일수가 이어진다
-const recordStudy = (p: Progress): Pick<Progress, 'today' | 'streak' | 'lastStudyDate'> => {
+const recordStudy = (p: Progress): Pick<Progress, 'today' | 'history' | 'streak' | 'lastStudyDate'> => {
   const today = dateKey();
   const count = p.today.date === today ? p.today.count + 1 : 1;
   let streak = p.streak;
   if (p.lastStudyDate !== today) streak = p.lastStudyDate === yesterdayKey() ? p.streak + 1 : 1;
-  return { today: { date: today, count }, streak, lastStudyDate: today };
+  const history = { ...p.history, [today]: count };
+  const keys = Object.keys(history).sort();
+  for (const k of keys.slice(0, Math.max(0, keys.length - HISTORY_DAYS))) delete history[k];
+  return { today: { date: today, count }, history, streak, lastStudyDate: today };
 };
 
 export const visibleStreak = (p: Progress) =>
   p.lastStudyDate === dateKey() || p.lastStudyDate === yesterdayKey() ? p.streak : 0;
+
+// 오늘부터 거슬러 올라간 n일 (오래된 날 → 오늘 순)
+export const recentDays = (p: Progress, n: number): { date: string; label: string; count: number }[] => {
+  const days = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const date = dateKey(d);
+    days.push({ date, label: ['일', '월', '화', '수', '목', '금', '토'][d.getDay()], count: p.history[date] ?? 0 });
+  }
+  return days;
+};
 
 export const todayCount = (p: Progress) => (p.today.date === dateKey() ? p.today.count : 0);
 
@@ -187,5 +219,7 @@ export function useProgress() {
     return finished;
   }, [update]);
 
-  return { progress, setLastDeck, openSet, mark, completeDialogue };
+  const setGoal = useCallback((goal: number) => update((p) => ({ ...p, goal: clampGoal(goal) })), [update]);
+
+  return { progress, setLastDeck, openSet, mark, completeDialogue, setGoal };
 }

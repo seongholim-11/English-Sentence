@@ -9,7 +9,7 @@ import { Txt } from '../components/Txt';
 import { DeckId, DeckMeta, cardDecks, deckMeta, decks } from '../data/decks';
 import { dialogues } from '../data/dialogues';
 import { Progress, SetRef, dueIds, roundState, todayCount, visibleStreak } from '../progress';
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -79,7 +79,7 @@ export function HomeScreen({ progress, onReview, onOpenDeck, onOpenSet, onNaviga
               <Txt size={13} color={colors.heroSub}>
                 오늘 본 카드
               </Txt>
-              <Txt size={34} weight={700} color={colors.white} style={styles.tight} tabular>
+              <Txt size={34} weight={700} color={colors.onHero} style={styles.tight} tabular>
                 {String(seen)}
                 <Txt size={18} weight={500} color={colors.heroFaint}>
                   {` / ${goal}`}
@@ -96,7 +96,7 @@ export function HomeScreen({ progress, onReview, onOpenDeck, onOpenSet, onNaviga
             onPress={() => (next.set ? onOpenSet(next.set) : onOpenDeck(next.deck))}
             style={({ pressed }) => [styles.heroBtn, pressed && { opacity: 0.85 }]}
           >
-            <Txt size={15} weight={600} color={colors.white}>
+            <Txt size={15} weight={600} color={colors.onHero}>
               {next.label}
             </Txt>
             <ArrowRightIcon />
@@ -196,7 +196,7 @@ function ReviewSection({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1 },
   scroll: { flex: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 22 },
   tight: { letterSpacing: -0.56 },
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  hero: { backgroundColor: colors.ink, borderRadius: 24, padding: 20, gap: 16 },
+  hero: { backgroundColor: colors.heroBg, borderRadius: 24, padding: 20, gap: 16 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   heroBtn: {
     height: 52,
@@ -239,4 +239,4 @@ const styles = StyleSheet.create({
   mono: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   monoSmall: { width: 30, height: 30, borderRadius: 10 },
   deckBottom: { gap: 6, marginTop: 'auto' },
-});
+}));

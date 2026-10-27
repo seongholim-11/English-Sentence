@@ -1,7 +1,7 @@
 import { Children, ReactNode } from 'react';
 import { StyleSheet, Text, TextProps, TextStyle } from 'react-native';
 
-import { colors } from '../theme';
+import { colors, fontScale } from '../theme';
 
 export type Weight = 400 | 500 | 600 | 700;
 
@@ -43,8 +43,8 @@ export function Txt({ size = 14, weight = 400, color = colors.ink, lineHeight, t
     <Text
       {...rest}
       style={[
-        { fontFamily: family, fontSize: size, color },
-        lineHeight ? { lineHeight: size * lineHeight } : null,
+        { fontFamily: family, fontSize: size * fontScale.value, color },
+        lineHeight ? { lineHeight: size * fontScale.value * lineHeight } : null,
         tabular ? styles.tabular : null,
         style,
       ]}

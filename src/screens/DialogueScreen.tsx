@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, IconButton } from '../components/Bits';
 import { Txt } from '../components/Txt';
 import { Dialogue, Line } from '../data/dialogues';
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 
 export type HideMode = 'en' | 'ko' | 'none';
 
@@ -123,7 +123,7 @@ function Bubble({ line, open, hide, rate, onPress }: { line: Line; open: boolean
         style={[styles.bubble, isA ? styles.bubbleA : styles.bubbleB]}
       >
         {showEn ? (
-          <Txt size={15} weight={500} lineHeight={1.4} color={isA ? colors.ink : colors.white}>
+          <Txt size={15} weight={500} lineHeight={1.4} color={isA ? colors.ink : colors.onHero}>
             {line.en}
           </Txt>
         ) : (
@@ -151,7 +151,7 @@ function Hidden({ label, dark, size }: { label: string; dark: boolean; size: num
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1, paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   segment: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 14, backgroundColor: colors.segment },
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 18,
   },
   bubbleB: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.heroBg,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 6,
     borderBottomLeftRadius: 18,
@@ -190,4 +190,4 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     justifyContent: 'center',
   },
-});
+}));

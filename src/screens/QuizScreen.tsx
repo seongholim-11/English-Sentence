@@ -6,7 +6,7 @@ import { Bar, Btn, Chip, IconButton } from '../components/Bits';
 import { Txt } from '../components/Txt';
 import { CardDeckId, deckMeta } from '../data/decks';
 import { makeQuiz } from '../quiz';
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 
 type Props = {
   deck: CardDeckId;
@@ -15,11 +15,6 @@ type Props = {
   onFinish: (score: number, total: number) => void;
   onBack: () => void;
 };
-
-const GOOD = '#1A9E7A';
-const GOOD_SOFT = '#DDF3EC';
-const BAD = '#D4452F';
-const BAD_SOFT = '#FBE4DF';
 
 export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
   const insets = useSafeAreaInsets();
@@ -141,8 +136,8 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
               onPress={() => choose(i)}
               style={({ pressed }) => [
                 styles.choice,
-                state === 'good' && { backgroundColor: GOOD_SOFT, borderColor: GOOD },
-                state === 'bad' && { backgroundColor: BAD_SOFT, borderColor: BAD },
+                state === 'good' && { backgroundColor: colors.goodSoft, borderColor: colors.good },
+                state === 'bad' && { backgroundColor: colors.badSoft, borderColor: colors.bad },
                 picked !== null && !state && { opacity: 0.5 },
                 pressed && picked === null && { opacity: 0.85 },
               ]}
@@ -160,7 +155,7 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
           <Btn
             label={idx + 1 >= total ? '결과 보기' : '다음 문제'}
             primary
-            accent={picked === q.answer ? GOOD : BAD}
+            accent={picked === q.answer ? colors.good : colors.bad}
             height={56}
             size={15}
             onPress={next}
@@ -172,7 +167,7 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1, paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   card: {
@@ -204,4 +199,4 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-});
+}));

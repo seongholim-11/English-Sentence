@@ -14,7 +14,7 @@ import { useFonts } from 'expo-font';
 import * as Speech from 'expo-speech';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
+import { BackHandler, View, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Tab } from './src/components/BottomNav';
@@ -31,7 +31,7 @@ import { SearchScreen } from './src/screens/SearchScreen';
 import { SetsScreen } from './src/screens/SetsScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
-import { colors } from './src/theme';
+import { applyTheme, colors, createStyles } from './src/theme';
 
 const REVIEW_MAX = 20;
 
@@ -93,6 +93,11 @@ export default function App() {
     });
     return () => sub.remove();
   }, [screen]);
+
+  // 테마와 글자 크기를 이번 렌더에 적용한다. 화면들은 렌더할 때마다 현재 값을 읽는다
+  const scheme = useColorScheme();
+  const themePref = progress?.prefs.theme ?? 'system';
+  applyTheme(themePref === 'system' ? (scheme === 'dark' ? 'dark' : 'light') : themePref, progress?.prefs.fontScale ?? 1);
 
   if (!fontsLoaded || !progress) return <View style={styles.root} />;
 
@@ -284,13 +289,13 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={styles.root}>
-        <StatusBar style="dark" />
+        <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
         {body}
       </View>
     </SafeAreaProvider>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1, backgroundColor: colors.bg },
-});
+}));

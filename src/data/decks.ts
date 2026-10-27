@@ -1,4 +1,5 @@
 import { frequencyParts } from './frequency';
+import { colors } from '../theme';
 import { phrasalRows } from './more/phrasal';
 import { sentenceRows } from './more/sentences';
 
@@ -169,11 +170,26 @@ const words = [...frequencyWords, ...conversationWords.filter((c) => !seen.has(c
 
 export const cardDecks: Record<CardDeckId, Card[]> = { words, phrasal, sentences };
 
+// 어두운 테마에서는 연한 배경 대신 어두운 톤을 쓴다
+const deckMeta0 = (
+  m: Omit<DeckMeta, 'soft' | 'deep'>,
+  light: { soft: string; deep: string },
+  dark: { soft: string; deep: string },
+): DeckMeta => ({
+  ...m,
+  get soft() {
+    return colors.mode === 'dark' ? dark.soft : light.soft;
+  },
+  get deep() {
+    return colors.mode === 'dark' ? dark.deep : light.deep;
+  },
+});
+
 export const decks: DeckMeta[] = [
-  { id: 'words', name: '영단어', sub: 'Vocabulary', mono: 'Aa', color: '#2F5BFF', soft: '#E7ECFF', deep: '#2140C4', bigFront: true },
-  { id: 'phrasal', name: '구동사', sub: 'Phrasal verbs', mono: 'PV', color: '#E8752A', soft: '#FDEBDD', deep: '#A84A10', bigFront: true },
-  { id: 'sentences', name: '문장', sub: 'Sentences', mono: 'S.', color: '#1A9E7A', soft: '#DDF3EC', deep: '#0F6E54', bigFront: false },
-  { id: 'dialogue', name: '대화문', sub: 'Dialogues', mono: 'A·B', color: '#7A4DE0', soft: '#ECE4FB', deep: '#5630B0', bigFront: false },
+  deckMeta0({ id: 'words', name: '영단어', sub: 'Vocabulary', mono: 'Aa', color: '#2F5BFF', bigFront: true }, { soft: '#E7ECFF', deep: '#2140C4' }, { soft: '#1F2A52', deep: '#9DB2FF' }),
+  deckMeta0({ id: 'phrasal', name: '구동사', sub: 'Phrasal verbs', mono: 'PV', color: '#E8752A', bigFront: true }, { soft: '#FDEBDD', deep: '#A84A10' }, { soft: '#3D2A1B', deep: '#F5A872' }),
+  deckMeta0({ id: 'sentences', name: '문장', sub: 'Sentences', mono: 'S.', color: '#1A9E7A', bigFront: false }, { soft: '#DDF3EC', deep: '#0F6E54' }, { soft: '#18362D', deep: '#6FD6B5' }),
+  deckMeta0({ id: 'dialogue', name: '대화문', sub: 'Dialogues', mono: 'A·B', color: '#7A4DE0', bigFront: false }, { soft: '#ECE4FB', deep: '#5630B0' }, { soft: '#2D2347', deep: '#B9A0F5' }),
 ];
 
 export const deckMeta = (id: DeckId): DeckMeta => decks.find((d) => d.id === id) ?? decks[1];

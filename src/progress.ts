@@ -24,6 +24,9 @@ export type Prefs = {
   autoSpeak: boolean;
   // 매일 복습 알림
   reminder: Reminder;
+  // 화면 테마와 글자 크기 배율
+  theme: 'system' | 'light' | 'dark';
+  fontScale: number;
 };
 
 export const SPEECH_RATES: { label: string; rate: number }[] = [
@@ -32,7 +35,20 @@ export const SPEECH_RATES: { label: string; rate: number }[] = [
   { label: '빠르게', rate: 1.1 },
 ];
 
-export const defaultPrefs = (): Prefs => ({ speechRate: 0.9, autoSpeak: false, reminder: defaultReminder() });
+export const FONT_SCALES: { label: string; scale: number }[] = [
+  { label: '작게', scale: 0.9 },
+  { label: '보통', scale: 1 },
+  { label: '크게', scale: 1.12 },
+  { label: '아주 크게', scale: 1.25 },
+];
+
+export const THEMES: { label: string; theme: Prefs['theme'] }[] = [
+  { label: '시스템', theme: 'system' },
+  { label: '라이트', theme: 'light' },
+  { label: '다크', theme: 'dark' },
+];
+
+export const defaultPrefs = (): Prefs => ({ speechRate: 0.9, autoSpeak: false, reminder: defaultReminder(), theme: 'system', fontScale: 1 });
 
 export type CardState = { box: number; due: string };
 

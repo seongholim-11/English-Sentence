@@ -7,7 +7,7 @@ import { Bar, Btn, Chip, DashedLine, IconButton } from '../components/Bits';
 import { AgainIcon, CheckIcon, SpeakerIcon, StarIcon, TapIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { CardDeckId, cardDecks, deckMeta, speakText } from '../data/decks';
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 
 type Props = {
   deck: CardDeckId;
@@ -128,7 +128,7 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1, paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   card: {
@@ -155,4 +155,4 @@ const styles = StyleSheet.create({
   example: { gap: 4, padding: 14, borderRadius: 16, backgroundColor: colors.exampleBg },
   tapHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   actions: { flexDirection: 'row', gap: 10 },
-});
+}));

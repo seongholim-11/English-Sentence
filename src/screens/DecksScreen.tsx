@@ -7,7 +7,7 @@ import { SearchIcon, StarIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { DeckId, DeckMeta, decks, setCount } from '../data/decks';
 import { Progress } from '../progress';
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 import { deckStats } from './HomeScreen';
 
 type Props = {
@@ -97,7 +97,7 @@ export function DecksScreen({ progress, onOpenDeck, onSearch, onNavigate }: Prop
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1 },
   body: { flex: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
   tight: { letterSpacing: -0.56 },
@@ -140,4 +140,4 @@ const styles = StyleSheet.create({
   },
   mono: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   line: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-});
+}));

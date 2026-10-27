@@ -5,7 +5,7 @@ import { Bar, Btn, Chip, IconButton } from '../components/Bits';
 import { Txt } from '../components/Txt';
 import { cardDecks, deckMeta } from '../data/decks';
 import { RoundResult } from '../progress';
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 
 type Props = {
   result: RoundResult;
@@ -107,7 +107,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1, paddingHorizontal: 20, gap: 24 },
   stats: { flexDirection: 'row', gap: 10 },
   stat: {
@@ -129,4 +129,4 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     justifyContent: 'center',
   },
-});
+}));

@@ -5,9 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, Tab } from '../components/BottomNav';
 import { Txt } from '../components/Txt';
-import { GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES } from '../progress';
+import { FONT_SCALES, GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES, THEMES } from '../progress';
 import { Reminder, applyReminder, reminderSupported, timeLabel } from '../reminder';
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 
 const PRESETS = [10, 20, 30, 50, 100];
 const STEP = 5;
@@ -180,10 +180,39 @@ export function SettingsScreen({
             </View>
           )}
           {reminderNote !== '' && (
-            <Txt size={13} color="#D4452F">
+            <Txt size={13} color={colors.bad}>
               {reminderNote}
             </Txt>
           )}
+        </View>
+
+        <View style={styles.card}>
+          <View style={{ gap: 4 }}>
+            <Txt size={17} weight={600}>
+              화면
+            </Txt>
+            <Txt size={13} color={colors.muted}>
+              테마와 글자 크기를 바꿀 수 있어요.
+            </Txt>
+          </View>
+          <View style={styles.presets}>
+            {THEMES.map(({ label, theme }) => (
+              <Choice key={theme} label={label} on={progress.prefs.theme === theme} onPress={() => onSetPrefs({ theme })} />
+            ))}
+          </View>
+          <View style={styles.presets}>
+            {FONT_SCALES.map(({ label, scale }) => (
+              <Choice key={scale} label={label} on={progress.prefs.fontScale === scale} onPress={() => onSetPrefs({ fontScale: scale })} />
+            ))}
+          </View>
+          <View style={styles.sample}>
+            <Txt size={15} weight={600}>
+              원어민이 자주 쓰는 표현
+            </Txt>
+            <Txt size={13} color={colors.muted}>
+              I'll look into it and get back to you.
+            </Txt>
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -210,6 +239,21 @@ export function SettingsScreen({
   );
 }
 
+function Choice({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+      onPress={onPress}
+      style={[styles.preset, on && { backgroundColor: colors.ink, borderColor: colors.ink }]}
+    >
+      <Txt size={13} weight={600} color={on ? colors.white : colors.ink} numberOfLines={1}>
+        {label}
+      </Txt>
+    </Pressable>
+  );
+}
+
 function Stepper({ label, sign, disabled, onPress }: { label: string; sign: string; disabled: boolean; onPress: () => void }) {
   return (
     <Pressable
@@ -226,7 +270,7 @@ function Stepper({ label, sign, disabled, onPress }: { label: string; sign: stri
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1 },
   body: { paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
   tight: { letterSpacing: -0.56 },
@@ -250,6 +294,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   presets: { flexDirection: 'row', gap: 8 },
+  sample: { gap: 4, padding: 14, borderRadius: 14, backgroundColor: colors.exampleBg },
   preset: {
     flex: 1,
     height: 40,
@@ -261,4 +306,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-});
+}));

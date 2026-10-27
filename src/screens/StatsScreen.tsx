@@ -6,7 +6,7 @@ import { FlameIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { CardDeckId, cardDecks } from '../data/decks';
 import { Progress, recentDays, todayCount, visibleStreak } from '../progress';
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 
 const CHART_H = 120;
 
@@ -43,7 +43,7 @@ export function StatsScreen({ progress, onNavigate }: { progress: Progress; onNa
         <View style={styles.hero}>
           <FlameIcon size={28} />
           <View style={{ gap: 2 }}>
-            <Txt size={34} weight={700} color={colors.white} style={styles.tight} tabular>
+            <Txt size={34} weight={700} color={colors.onHero} style={styles.tight} tabular>
               {`${visibleStreak(progress)}일`}
             </Txt>
             <Txt size={13} color={colors.heroSub}>
@@ -76,7 +76,7 @@ export function StatsScreen({ progress, onNavigate }: { progress: Progress; onNa
                         style={{
                           height: Math.max(4, (d.count / max) * CHART_H),
                           borderRadius: 6,
-                          backgroundColor: d.count >= progress.goal ? colors.accent : today ? '#9DB2FF' : colors.track,
+                          backgroundColor: d.count >= progress.goal ? colors.accent : today ? colors.accentSoft : colors.track,
                         }}
                       />
                     </View>
@@ -108,7 +108,7 @@ export function StatsScreen({ progress, onNavigate }: { progress: Progress; onNa
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1 },
   body: { flex: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
   tight: { letterSpacing: -0.56 },
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    backgroundColor: colors.ink,
+    backgroundColor: colors.heroBg,
     borderRadius: 24,
     padding: 20,
   },
@@ -143,4 +143,4 @@ const styles = StyleSheet.create({
   barCol: { flex: 1, alignItems: 'stretch', gap: 4 },
   grid: { flexDirection: 'row', gap: 4, paddingVertical: 14, paddingHorizontal: 12 },
   stat: { flex: 1, gap: 4 },
-});
+}));

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 import { DecksIcon, HomeIcon, SettingsIcon, StatsIcon } from './Icons';
 import { Txt } from './Txt';
 
@@ -39,7 +39,7 @@ export function BottomNav({ active, onNavigate }: { active: Tab; onNavigate: (t:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   nav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -50,4 +50,4 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   tab: { width: 72, height: 52, alignItems: 'center', justifyContent: 'center', gap: 3 },
-});
+}));

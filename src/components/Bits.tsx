@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 import { BackIcon, CloseIcon } from './Icons';
 import { Txt } from './Txt';
 
@@ -87,14 +87,14 @@ export function Btn({
       ]}
     >
       {icon}
-      <Txt size={size} weight={600} color={primary ? colors.white : colors.ink}>
+      <Txt size={size} weight={600} color={primary ? (accent === colors.ink ? colors.white : '#FFFFFF') : colors.ink}>
         {label}
       </Txt>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   iconBtn: {
     width: 44,
     height: 44,
@@ -127,4 +127,4 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderStrong,
   },
-});
+}));

@@ -9,7 +9,7 @@ import { Txt } from '../components/Txt';
 import { CardDeckId, cardDecks, deckMeta, speakText } from '../data/decks';
 import { Progress, isFavorite } from '../progress';
 import { Hit, searchCards } from '../search';
-import { colors } from '../theme';
+import { colors, createStyles, fontScale } from '../theme';
 
 type Props = {
   progress: Progress;
@@ -75,6 +75,7 @@ export function SearchScreen({ progress, initialFavorites, onToggleFavorite, onB
 
       <FlatList
         data={hits}
+        extraData={`${colors.mode}-${fontScale.value}`}
         keyExtractor={(h) => `${h.deck}:${h.card.id}`}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ gap: 10, flexGrow: 1 }}
@@ -158,7 +159,7 @@ function Tab({ label, on, onPress }: { label: string; on: boolean; onPress: () =
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1, paddingHorizontal: 20, gap: 14 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   input: {
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  textInput: { flex: 1, minWidth: 0, fontSize: 15, color: colors.ink, fontFamily: 'IBMPlexSansKR_500Medium', paddingVertical: 0 },
+  textInput: { flex: 1, minWidth: 0, fontSize: 15 * fontScale.value, color: colors.ink, fontFamily: 'IBMPlexSansKR_500Medium', paddingVertical: 0 },
   tabs: { flexDirection: 'row', gap: 8 },
   tab: {
     height: 34,
@@ -205,4 +206,4 @@ const styles = StyleSheet.create({
   },
   detail: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', padding: 12, borderRadius: 12, backgroundColor: colors.exampleBg },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
-});
+}));

@@ -6,7 +6,7 @@ import { Bar, Btn, IconButton } from '../components/Bits';
 import { Txt } from '../components/Txt';
 import { CardDeckId, SET_SIZE, cardDecks, deckMeta, setCards, setCount } from '../data/decks';
 import { Progress, SetRef, roundState, setKey } from '../progress';
-import { colors } from '../theme';
+import { colors, createStyles } from '../theme';
 
 const CARD_H = 156;
 const GAP = 12;
@@ -99,7 +99,7 @@ export function SetsScreen({ deck, progress, onStudy, onQuiz, onBack }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   root: { flex: 1, paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   card: {
@@ -113,4 +113,4 @@ const styles = StyleSheet.create({
   },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   actions: { flexDirection: 'row', gap: 10 },
-});
+}));

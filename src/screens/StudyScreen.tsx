@@ -65,22 +65,15 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
       <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.card}>
         <View style={styles.cardTop}>
           <Chip label={card.tag} bg={meta.soft} fg={meta.deep} />
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={isFavorite(card.id) ? '즐겨찾기 해제' : '즐겨찾기'}
-              onPress={() => onFavorite(card.id)}
-              hitSlop={8}
-              style={styles.speak}
-            >
-              <StarIcon filled={isFavorite(card.id)} color={isFavorite(card.id) ? '#F2A91B' : colors.muted} />
-            </Pressable>
-            {canSpeak && (
-              <Pressable accessibilityRole="button" accessibilityLabel="발음 듣기" onPress={speak} hitSlop={8} style={styles.speak}>
-                <SpeakerIcon />
-              </Pressable>
-            )}
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isFavorite(card.id) ? '즐겨찾기 해제' : '즐겨찾기'}
+            onPress={() => onFavorite(card.id)}
+            hitSlop={4}
+            style={styles.star}
+          >
+            <StarIcon size={22} filled={isFavorite(card.id)} color={isFavorite(card.id) ? '#F2A91B' : colors.muted} />
+          </Pressable>
         </View>
         <View style={styles.front}>
           <Txt size={meta.bigFront ? 44 : 28} weight={700} lineHeight={1.2} style={{ letterSpacing: meta.bigFront ? -0.88 : -0.56 }}>
@@ -89,6 +82,20 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
           <Txt size={14} color={colors.muted}>
             {card.hint}
           </Txt>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="영어 발음 듣기"
+            accessibilityHint={canSpeak ? undefined : '뜻을 본 뒤에 들을 수 있어요'}
+            accessibilityState={{ disabled: !canSpeak }}
+            disabled={!canSpeak}
+            onPress={speak}
+            style={({ pressed }) => [styles.listen, !canSpeak && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}
+          >
+            <SpeakerIcon size={26} color={colors.accent} />
+            <Txt size={17} weight={600} color={colors.accent}>
+              {canSpeak ? '발음 듣기' : '뜻을 보면 들을 수 있어요'}
+            </Txt>
+          </Pressable>
         </View>
         {revealed ? (
           <View style={{ gap: 12 }}>
@@ -143,13 +150,25 @@ const styles = createStyles(() => ({
     boxShadow: '0 12px 32px rgba(21,23,28,0.06)',
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  speak: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  star: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.exampleBg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  listen: {
+    minHeight: 56,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 28,
+    backgroundColor: colors.accentTint,
   },
   front: { flex: 1, justifyContent: 'center', gap: 10 },
   example: { gap: 4, padding: 14, borderRadius: 16, backgroundColor: colors.exampleBg },

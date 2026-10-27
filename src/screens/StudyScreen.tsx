@@ -11,14 +11,15 @@ import { colors } from '../theme';
 
 type Props = {
   deck: CardDeckId;
+  set: number;
   state: RoundState;
   revealed: boolean;
   onToggle: () => void;
   onMark: (knew: boolean) => void;
-  onHome: () => void;
+  onBack: () => void;
 };
 
-export function StudyScreen({ deck, state, revealed, onToggle, onMark, onHome }: Props) {
+export function StudyScreen({ deck, set, state, revealed, onToggle, onMark, onBack }: Props) {
   const insets = useSafeAreaInsets();
   const meta = deckMeta(deck);
   const cards = cardDecks[deck];
@@ -35,10 +36,10 @@ export function StudyScreen({ deck, state, revealed, onToggle, onMark, onHome }:
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 30) }]}>
       <View style={styles.header}>
-        <IconButton label="홈으로" onPress={onHome} />
+        <IconButton label="세트 목록으로" onPress={onBack} />
         <View style={{ flex: 1, gap: 2 }}>
           <Txt size={16} weight={600}>
-            {meta.name}
+            {`${meta.name} · ${set + 1}세트`}
           </Txt>
           <Txt size={12} color={colors.muted}>
             {`${state.round}회독 · 남은 카드 ${total - state.pos}장`}

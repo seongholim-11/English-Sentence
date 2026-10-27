@@ -10,10 +10,10 @@ import { colors } from '../theme';
 type Props = {
   result: RoundResult;
   onNext: () => void;
-  onHome: () => void;
+  onBack: () => void;
 };
 
-export function DoneScreen({ result, onNext, onHome }: Props) {
+export function DoneScreen({ result, onNext, onBack }: Props) {
   const insets = useSafeAreaInsets();
   const meta = deckMeta(result.deck);
   const againN = result.again.length;
@@ -29,11 +29,11 @@ export function DoneScreen({ result, onNext, onHome }: Props) {
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 30) }]}>
       <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-        <IconButton label="홈으로" kind="close" onPress={onHome} />
+        <IconButton label="세트 목록으로" kind="close" onPress={onBack} />
       </View>
 
       <View style={{ gap: 10 }}>
-        <Chip label={meta.name} bg={meta.soft} fg={meta.deep} />
+        <Chip label={`${meta.name} · ${result.set + 1}세트`} bg={meta.soft} fg={meta.deep} />
         <Txt size={38} weight={700} lineHeight={1.1} style={{ letterSpacing: -1.14 }}>
           {`${result.round}회독 완료`}
         </Txt>
@@ -83,10 +83,10 @@ export function DoneScreen({ result, onNext, onHome }: Props) {
       <View style={{ gap: 10 }}>
         <Btn label={nextLabel} primary onPress={onNext} style={{ borderWidth: 0 }} />
         <Btn
-          label="홈으로"
+          label="세트 목록으로"
           height={52}
           size={15}
-          onPress={onHome}
+          onPress={onBack}
           style={{ backgroundColor: 'transparent', borderWidth: 0 }}
         />
       </View>

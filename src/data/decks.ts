@@ -1,3 +1,5 @@
+import { frequencyParts } from './frequency';
+
 export type Card = {
   id: string;
   tag: string;
@@ -32,8 +34,8 @@ const card = (tag: string, front: string, hint: string, back: string, ex: string
   exKo,
 });
 
-// 원어민이 일상 회화에서 자주 쓰는 단어
-const words: Card[] = [
+// 원어민이 일상 회화에서 자주 쓰는 단어 (빈도순 단어 뒤에 붙는다)
+const conversationWords: Card[] = [
   card('adverb', 'literally', '/ˈlɪtərəli/', '말 그대로, 진짜로 (강조)', 'I literally just got here.', '나 진짜 방금 도착했어.'),
   card('adverb', 'honestly', '/ˈɑːnɪstli/', '솔직히, 진심으로', "Honestly, I don't think it's worth it.", '솔직히 그럴 가치는 없는 것 같아.'),
   card('adverb', 'basically', '/ˈbeɪsɪkli/', '한마디로, 기본적으로', "So basically, we're starting over.", '그러니까 한마디로, 처음부터 다시 하는 거야.'),
@@ -148,6 +150,11 @@ const sentences: Card[] = [
   card('한국어 → 영어', '실망시키지 않을게.', '영어로 말해 보세요', "I won't let you down.", 'let down = 실망시키다', '약속할 때 자주 쓰는 말'),
 ];
 
+// 영단어 덱: 회화 빈도순 단어 다음에, 거기 없는 회화 단어를 이어 붙인다
+const frequencyWords = frequencyParts.flat();
+const seen = new Set(frequencyWords.map((c) => c.id.toLowerCase()));
+const words = [...frequencyWords, ...conversationWords.filter((c) => !seen.has(c.id.toLowerCase()))];
+
 export const cardDecks: Record<CardDeckId, Card[]> = { words, phrasal, sentences };
 
 export const decks: DeckMeta[] = [
@@ -158,6 +165,13 @@ export const decks: DeckMeta[] = [
 ];
 
 export const deckMeta = (id: DeckId): DeckMeta => decks.find((d) => d.id === id) ?? decks[1];
+
+// 카드 덱은 50장씩 세트로 나눠 공부한다
+export const SET_SIZE = 50;
+
+export const setCount = (deck: CardDeckId) => Math.ceil(cardDecks[deck].length / SET_SIZE);
+
+export const setCards = (deck: CardDeckId, set: number) => cardDecks[deck].slice(set * SET_SIZE, (set + 1) * SET_SIZE);
 
 // 학습 카드에서 읽어 줄 영어: 문장 덱은 앞면이 한국어라 뒷면을 읽는다
 export const speakText = (deck: CardDeckId, c: Card): string => (deck === 'sentences' ? c.back : c.front);

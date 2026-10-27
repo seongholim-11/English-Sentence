@@ -19,16 +19,18 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { CardDeckId, DeckId } from './src/data/decks';
 import { dialogues } from './src/data/dialogues';
-import { RoundResult, useProgress } from './src/progress';
+import { RoundResult, SetRef, roundState, useProgress } from './src/progress';
 import { DialogueScreen, HideMode } from './src/screens/DialogueScreen';
 import { DoneScreen } from './src/screens/DoneScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { SetsScreen } from './src/screens/SetsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
 import { colors } from './src/theme';
 
 type Screen =
   | { name: 'home' }
-  | { name: 'study'; deck: CardDeckId }
+  | { name: 'sets'; deck: CardDeckId }
+  | { name: 'study'; set: SetRef }
   | { name: 'dialogue' }
   | { name: 'done'; result: RoundResult };
 
@@ -43,7 +45,7 @@ export default function App() {
     IBMPlexSansKR_600SemiBold,
     IBMPlexSansKR_700Bold,
   });
-  const { progress, setLastDeck, mark, completeDialogue } = useProgress();
+  const { progress, setLastDeck, openSet, mark, completeDialogue } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
@@ -55,14 +57,22 @@ export default function App() {
     setScreen({ name: 'home' });
   };
 
+  const goSets = (deck: CardDeckId) => {
+    Speech.stop();
+    setScreen({ name: 'sets', deck });
+  };
+
+  // 안드로이드 뒤로 가기: 학습·완료 → 세트 목록 → 홈
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (screen.name === 'home') return false;
-      goHome();
+      if (screen.name === 'study') goSets(screen.set.deck);
+      else if (screen.name === 'done') goSets(screen.result.deck);
+      else goHome();
       return true;
     });
     return () => sub.remove();
-  }, [screen.name]);
+  }, [screen]);
 
   if (!fontsLoaded || !progress) return <View style={styles.root} />;
 
@@ -73,14 +83,19 @@ export default function App() {
       setShown({});
       setScreen({ name: 'dialogue' });
     } else {
-      setRevealed(false);
-      setScreen({ name: 'study', deck: id });
+      setScreen({ name: 'sets', deck: id });
     }
   };
 
-  const onMark = (deck: CardDeckId, knew: boolean) => {
+  const startSet = (s: SetRef) => {
+    openSet(s);
+    setRevealed(false);
+    setScreen({ name: 'study', set: s });
+  };
+
+  const onMark = (s: SetRef, knew: boolean) => {
     Speech.stop();
-    const result = mark(deck, knew);
+    const result = mark(s, knew);
     setRevealed(false);
     if (result) setScreen({ name: 'done', result });
   };
@@ -95,20 +110,26 @@ export default function App() {
   let body;
   switch (screen.name) {
     case 'home':
-      body = <HomeScreen progress={progress} onOpenDeck={openDeck} />;
+      body = <HomeScreen progress={progress} onOpenDeck={openDeck} onOpenSet={startSet} />;
       break;
-    case 'study':
+    case 'sets':
+      body = <SetsScreen deck={screen.deck} progress={progress} onOpenSet={startSet} onHome={goHome} />;
+      break;
+    case 'study': {
+      const s = screen.set;
       body = (
         <StudyScreen
-          deck={screen.deck}
-          state={progress.decks[screen.deck]}
+          deck={s.deck}
+          set={s.set}
+          state={roundState(progress, s)}
           revealed={revealed}
           onToggle={() => setRevealed((r) => !r)}
-          onMark={(knew) => onMark(screen.deck, knew)}
-          onHome={goHome}
+          onMark={(knew) => onMark(s, knew)}
+          onBack={() => goSets(s.deck)}
         />
       );
       break;
+    }
     case 'dialogue':
       body = (
         <DialogueScreen
@@ -133,8 +154,8 @@ export default function App() {
       body = (
         <DoneScreen
           result={screen.result}
-          onNext={() => openDeck(screen.result.deck)}
-          onHome={goHome}
+          onNext={() => startSet({ deck: screen.result.deck, set: screen.result.set })}
+          onBack={() => goSets(screen.result.deck)}
         />
       );
       break;

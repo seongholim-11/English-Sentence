@@ -17,18 +17,22 @@ import { useEffect, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Tab } from './src/components/BottomNav';
 import { CardDeckId, DeckId } from './src/data/decks';
 import { dialogues } from './src/data/dialogues';
 import { RoundResult, SetRef, roundState, useProgress } from './src/progress';
 import { DialogueScreen, HideMode } from './src/screens/DialogueScreen';
+import { DecksScreen } from './src/screens/DecksScreen';
 import { DoneScreen } from './src/screens/DoneScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { SetsScreen } from './src/screens/SetsScreen';
+import { StatsScreen } from './src/screens/StatsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
 import { colors } from './src/theme';
 
 type Screen =
-  | { name: 'home' }
+  | { name: Tab }
   | { name: 'sets'; deck: CardDeckId }
   | { name: 'study'; set: SetRef }
   | { name: 'dialogue' }
@@ -45,7 +49,7 @@ export default function App() {
     IBMPlexSansKR_600SemiBold,
     IBMPlexSansKR_700Bold,
   });
-  const { progress, setLastDeck, openSet, mark, completeDialogue } = useProgress();
+  const { progress, setLastDeck, openSet, mark, completeDialogue, setGoal } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
@@ -55,6 +59,11 @@ export default function App() {
   const goHome = () => {
     Speech.stop();
     setScreen({ name: 'home' });
+  };
+
+  const goTab = (t: Tab) => {
+    Speech.stop();
+    setScreen({ name: t });
   };
 
   const goSets = (deck: CardDeckId) => {
@@ -110,7 +119,16 @@ export default function App() {
   let body;
   switch (screen.name) {
     case 'home':
-      body = <HomeScreen progress={progress} onOpenDeck={openDeck} onOpenSet={startSet} />;
+      body = <HomeScreen progress={progress} onOpenDeck={openDeck} onOpenSet={startSet} onNavigate={goTab} />;
+      break;
+    case 'decks':
+      body = <DecksScreen progress={progress} onOpenDeck={openDeck} onNavigate={goTab} />;
+      break;
+    case 'stats':
+      body = <StatsScreen progress={progress} onNavigate={goTab} />;
+      break;
+    case 'settings':
+      body = <SettingsScreen progress={progress} onSetGoal={setGoal} onNavigate={goTab} />;
       break;
     case 'sets':
       body = <SetsScreen deck={screen.deck} progress={progress} onOpenSet={startSet} onHome={goHome} />;

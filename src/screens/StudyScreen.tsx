@@ -1,4 +1,5 @@
 import * as Speech from 'expo-speech';
+import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,12 +16,14 @@ type Props = {
   queue: string[];
   pos: number;
   revealed: boolean;
+  rate: number;
+  autoSpeak: boolean;
   onToggle: () => void;
   onMark: (knew: boolean) => void;
   onBack: () => void;
 };
 
-export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, onToggle, onMark, onBack }: Props) {
+export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate, autoSpeak, onToggle, onMark, onBack }: Props) {
   const insets = useSafeAreaInsets();
   const meta = deckMeta(deck);
   const cards = cardDecks[deck];
@@ -31,8 +34,13 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, onTog
 
   const speak = () => {
     Speech.stop();
-    Speech.speak(speakText(deck, card), { language: 'en-US', rate: 0.9 });
+    Speech.speak(speakText(deck, card), { language: 'en-US', rate });
   };
+
+  // 자동 재생: 카드가 바뀌면 읽어 준다 (문장은 영어가 보이는 뜻 보기 뒤에)
+  useEffect(() => {
+    if (autoSpeak && canSpeak) speak();
+  }, [card.id, canSpeak]);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 30) }]}>

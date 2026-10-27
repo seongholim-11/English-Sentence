@@ -27,10 +27,11 @@ type Props = {
   onReset: () => void;
   onDone: () => void;
   onHome: () => void;
+  rate: number;
 };
 
 export function DialogueScreen(props: Props) {
-  const { dialogue, index, count, round, hide, shown, onHide, onToggleLine, onReset, onDone, onHome } = props;
+  const { dialogue, index, count, round, hide, shown, onHide, onToggleLine, onReset, onDone, onHome, rate } = props;
   const insets = useSafeAreaInsets();
 
   return (
@@ -71,7 +72,7 @@ export function DialogueScreen(props: Props) {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.lines}>
         {dialogue.lines.map((l, i) => (
-          <Bubble key={`${dialogue.id}-${i}`} line={l} open={!!shown[i]} hide={hide} onPress={() => onToggleLine(i)} />
+          <Bubble key={`${dialogue.id}-${i}`} line={l} open={!!shown[i]} hide={hide} rate={rate} onPress={() => onToggleLine(i)} />
         ))}
         <View style={styles.expr}>
           <Txt size={13} weight={600} color={colors.muted}>
@@ -97,7 +98,7 @@ export function DialogueScreen(props: Props) {
   );
 }
 
-function Bubble({ line, open, hide, onPress }: { line: Line; open: boolean; hide: HideMode; onPress: () => void }) {
+function Bubble({ line, open, hide, rate, onPress }: { line: Line; open: boolean; hide: HideMode; rate: number; onPress: () => void }) {
   const isA = line.who === 'A';
   const showEn = open || hide !== 'en';
   const showKo = open || hide !== 'ko';
@@ -106,7 +107,7 @@ function Bubble({ line, open, hide, onPress }: { line: Line; open: boolean; hide
   const press = () => {
     if (!open || hide !== 'en') {
       Speech.stop();
-      Speech.speak(line.en, { language: 'en-US', rate: 0.9 });
+      Speech.speak(line.en, { language: 'en-US', rate });
     }
     onPress();
   };

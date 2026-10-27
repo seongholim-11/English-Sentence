@@ -15,6 +15,22 @@ export type RoundState = {
 };
 
 // 라이트너 상자 번호(0~5)와 다음 복습 날짜
+// 설정 화면에서 바꾸는 값
+export type Prefs = {
+  // 발음 속도 (expo-speech rate)
+  speechRate: number;
+  // 카드를 넘기면 자동으로 읽어 주기
+  autoSpeak: boolean;
+};
+
+export const SPEECH_RATES: { label: string; rate: number }[] = [
+  { label: '느리게', rate: 0.7 },
+  { label: '보통', rate: 0.9 },
+  { label: '빠르게', rate: 1.1 },
+];
+
+export const defaultPrefs = (): Prefs => ({ speechRate: 0.9, autoSpeak: false });
+
 export type CardState = { box: number; due: string };
 
 // 덱 안의 50장짜리 세트 하나
@@ -37,6 +53,7 @@ export type Progress = {
   history: Record<string, number>;
   // 하루 목표 카드 수 (설정 화면에서 바꾼다)
   goal: number;
+  prefs: Prefs;
   streak: number;
   lastStudyDate: string | null;
 };
@@ -111,6 +128,7 @@ const initialProgress = (): Progress => ({
   today: { date: dateKey(), count: 0 },
   history: {},
   goal: DAILY_GOAL,
+  prefs: defaultPrefs(),
   streak: 0,
   lastStudyDate: null,
 });
@@ -153,6 +171,7 @@ const sanitize = (raw: Partial<Progress>): Progress => {
   // 기록 화면이 생기기 전에 공부한 오늘 분량도 반영한다
   if (raw.today?.date === p.today.date) p.history[p.today.date] = Math.max(p.history[p.today.date] ?? 0, p.today.count);
   p.goal = clampGoal(raw.goal ?? DAILY_GOAL);
+  p.prefs = { ...defaultPrefs(), ...raw.prefs };
   return p;
 };
 
@@ -299,5 +318,7 @@ export function useProgress() {
 
   const setGoal = useCallback((goal: number) => update((p) => ({ ...p, goal: clampGoal(goal) })), [update]);
 
-  return { progress, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
+  const setPrefs = useCallback((prefs: Partial<Prefs>) => update((p) => ({ ...p, prefs: { ...p.prefs, ...prefs } })), [update]);
+
+  return { progress, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
 }

@@ -14,6 +14,9 @@ export type RoundState = {
   again: string[];
 };
 
+// 라이트너 상자 번호(0~5)와 다음 복습 날짜
+export type CardState = { box: number; due: string };
+
 // 덱 안의 50장짜리 세트 하나
 export type SetRef = { deck: CardDeckId; set: number };
 
@@ -23,6 +26,10 @@ export type Progress = {
   // 한 번이라도 '알아요'를 누른 카드 (홈·세트 진행률)
   mastered: Record<CardDeckId, string[]>;
   dialogue: { round: number; pos: number };
+  // 카드별 간격 복습 상태. 키는 `${deck}:${cardId}`
+  cards: Record<string, CardState>;
+  // 세트별 퀴즈 최고 점수. 키는 `${deck}:${set}`
+  quiz: Record<string, { best: number; total: number }>;
   lastDeck: DeckId;
   lastSet: SetRef | null;
   today: { date: string; count: number };
@@ -51,6 +58,33 @@ export const freshRound = (ref: SetRef, round: number, queue?: string[]): RoundS
 
 export const roundState = (p: Progress, ref: SetRef): RoundState => p.sets[setKey(ref)] ?? freshRound(ref, 1);
 
+// 상자 번호별 복습 간격(일). 맞히면 한 칸 올라가고, 틀리면 0번으로 돌아와 오늘 다시 나온다
+const INTERVALS = [0, 1, 3, 7, 14, 30];
+
+const addDays = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return dateKey(d);
+};
+
+const cardKey = (deck: CardDeckId, id: string) => `${deck}:${id}`;
+
+const graded = (cards: Progress['cards'], deck: CardDeckId, id: string, knew: boolean): Progress['cards'] => {
+  const key = cardKey(deck, id);
+  const box = knew ? Math.min((cards[key]?.box ?? 0) + 1, INTERVALS.length - 1) : 0;
+  return { ...cards, [key]: { box, due: addDays(INTERVALS[box]) } };
+};
+
+// 오늘 복습할 카드 id (오래 밀린 순)
+export const dueIds = (p: Progress, deck: CardDeckId): string[] => {
+  const today = dateKey();
+  const prefix = `${deck}:`;
+  return Object.entries(p.cards)
+    .filter(([k, c]) => k.startsWith(prefix) && c.due <= today)
+    .sort((a, b) => a[1].due.localeCompare(b[1].due))
+    .map(([k]) => k.slice(prefix.length));
+};
+
 export const dateKey = (d: Date = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -70,6 +104,8 @@ const initialProgress = (): Progress => ({
   sets: {},
   mastered: Object.fromEntries(CARD_DECKS.map((d) => [d, []])) as unknown as Record<CardDeckId, string[]>,
   dialogue: { round: 1, pos: 0 },
+  cards: {},
+  quiz: {},
   lastDeck: 'phrasal',
   lastSet: null,
   today: { date: dateKey(), count: 0 },
@@ -84,10 +120,8 @@ const initialProgress = (): Progress => ({
 const sanitize = (raw: Partial<Progress>): Progress => {
   const base = initialProgress();
   const p: Progress = { ...base, ...raw, sets: {}, mastered: { ...base.mastered } } as Progress;
-  for (const deck of CARD_DECKS) {
-    const ids = new Set(cardDecks[deck].map((c) => c.id));
-    p.mastered[deck] = (raw.mastered?.[deck] ?? []).filter((id) => ids.has(id));
-  }
+  const cardIds = Object.fromEntries(CARD_DECKS.map((d) => [d, new Set(cardDecks[d].map((c) => c.id))])) as Record<CardDeckId, Set<string>>;
+  for (const deck of CARD_DECKS) p.mastered[deck] = (raw.mastered?.[deck] ?? []).filter((id) => cardIds[deck].has(id));
   for (const [key, r] of Object.entries(raw.sets ?? {})) {
     const [deck, n] = key.split(':');
     const set = Number(n);
@@ -98,6 +132,17 @@ const sanitize = (raw: Partial<Progress>): Progress => {
     const again = r.again.filter((id) => ids.has(id));
     p.sets[key] =
       queue.length === 0 ? freshRound(ref, r.round) : { ...r, queue, again, pos: Math.min(r.pos, queue.length - 1) };
+  }
+  p.cards = {};
+  for (const [key, c] of Object.entries(raw.cards ?? {})) {
+    const i = key.indexOf(':');
+    const deck = key.slice(0, i) as CardDeckId;
+    if (CARD_DECKS.includes(deck) && cardIds[deck].has(key.slice(i + 1))) p.cards[key] = c;
+  }
+  p.quiz = {};
+  for (const [key, q] of Object.entries(raw.quiz ?? {})) {
+    const [deck, n] = key.split(':');
+    if (CARD_DECKS.includes(deck as CardDeckId) && Number(n) < setCount(deck as CardDeckId)) p.quiz[key] = q;
   }
   if (p.lastSet && !p.sets[setKey(p.lastSet)]) p.lastSet = null;
   if (p.lastDeck !== 'dialogue' && !CARD_DECKS.includes(p.lastDeck)) p.lastDeck = 'phrasal';
@@ -195,11 +240,44 @@ export function useProgress() {
         ...recordStudy(cur),
         sets: { ...cur.sets, [setKey(s)]: next },
         mastered: { ...cur.mastered, [s.deck]: mastered },
+        cards: graded(cur.cards, s.deck, id, knew),
         lastDeck: s.deck,
         lastSet: s,
       }));
       return finished ? { ...s, round: r.round, total: r.queue.length, known, again } : null;
     },
+    [update],
+  );
+
+  // 홈의 복습 카드: 카드 한 장 채점 (세트 진행과는 따로)
+  const review = useCallback(
+    (deck: CardDeckId, id: string, knew: boolean) =>
+      update((cur) => ({
+        ...cur,
+        ...recordStudy(cur),
+        cards: graded(cur.cards, deck, id, knew),
+        mastered:
+          knew && !cur.mastered[deck].includes(id)
+            ? { ...cur.mastered, [deck]: cur.mastered[deck].concat([id]) }
+            : cur.mastered,
+      })),
+    [update],
+  );
+
+  // 퀴즈 한 문제: 간격 복습 상태와 오늘 본 카드 수에 반영
+  const quizAnswer = useCallback(
+    (deck: CardDeckId, id: string, correct: boolean) =>
+      update((cur) => ({ ...cur, ...recordStudy(cur), cards: graded(cur.cards, deck, id, correct) })),
+    [update],
+  );
+
+  const recordQuiz = useCallback(
+    (s: SetRef, score: number, total: number) =>
+      update((cur) => {
+        const prev = cur.quiz[setKey(s)];
+        const better = !prev || score / total > prev.best / prev.total;
+        return better ? { ...cur, quiz: { ...cur.quiz, [setKey(s)]: { best: score, total } } } : cur;
+      }),
     [update],
   );
 
@@ -221,5 +299,5 @@ export function useProgress() {
 
   const setGoal = useCallback((goal: number) => update((p) => ({ ...p, goal: clampGoal(goal) })), [update]);
 
-  return { progress, setLastDeck, openSet, mark, completeDialogue, setGoal };
+  return { progress, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
 }

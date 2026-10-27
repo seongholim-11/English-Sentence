@@ -18,23 +18,28 @@ import { BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Tab } from './src/components/BottomNav';
-import { CardDeckId, DeckId } from './src/data/decks';
+import { CardDeckId, DeckId, deckMeta } from './src/data/decks';
 import { dialogues } from './src/data/dialogues';
-import { RoundResult, SetRef, roundState, useProgress } from './src/progress';
+import { RoundResult, SetRef, dueIds, roundState, useProgress } from './src/progress';
 import { DialogueScreen, HideMode } from './src/screens/DialogueScreen';
 import { DecksScreen } from './src/screens/DecksScreen';
 import { DoneScreen } from './src/screens/DoneScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { QuizScreen } from './src/screens/QuizScreen';
 import { SetsScreen } from './src/screens/SetsScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
 import { colors } from './src/theme';
 
+const REVIEW_MAX = 20;
+
 type Screen =
   | { name: Tab }
   | { name: 'sets'; deck: CardDeckId }
   | { name: 'study'; set: SetRef }
+  | { name: 'quiz'; set: SetRef }
+  | { name: 'review'; deck: CardDeckId; queue: string[]; pos: number }
   | { name: 'dialogue' }
   | { name: 'done'; result: RoundResult };
 
@@ -49,7 +54,7 @@ export default function App() {
     IBMPlexSansKR_600SemiBold,
     IBMPlexSansKR_700Bold,
   });
-  const { progress, setLastDeck, openSet, mark, completeDialogue, setGoal } = useProgress();
+  const { progress, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
@@ -75,8 +80,9 @@ export default function App() {
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (screen.name === 'home') return false;
-      if (screen.name === 'study') goSets(screen.set.deck);
+      if (screen.name === 'study' || screen.name === 'quiz') goSets(screen.set.deck);
       else if (screen.name === 'done') goSets(screen.result.deck);
+      else if (screen.name === 'sets') goTab('decks');
       else goHome();
       return true;
     });
@@ -109,6 +115,28 @@ export default function App() {
     if (result) setScreen({ name: 'done', result });
   };
 
+  const startQuiz = (s: SetRef) => {
+    setLastDeck(s.deck);
+    setScreen({ name: 'quiz', set: s });
+  };
+
+  // 홈의 복습 카드: 오늘 복습할 카드를 최대 20장까지 보여 준다. 없으면 그 덱의 세트 목록으로
+  const onReview = (id: DeckId) => {
+    if (id === 'dialogue') return openDeck(id);
+    const queue = dueIds(progress, id).slice(0, REVIEW_MAX);
+    if (queue.length === 0) return openDeck(id);
+    setRevealed(false);
+    setScreen({ name: 'review', deck: id, queue, pos: 0 });
+  };
+
+  const onReviewMark = (s: { deck: CardDeckId; queue: string[]; pos: number }, knew: boolean) => {
+    Speech.stop();
+    review(s.deck, s.queue[s.pos], knew);
+    setRevealed(false);
+    if (s.pos + 1 >= s.queue.length) goHome();
+    else setScreen({ ...s, name: 'review', pos: s.pos + 1 });
+  };
+
   const onDialogueDone = () => {
     Speech.stop();
     const roundFinished = completeDialogue();
@@ -119,7 +147,7 @@ export default function App() {
   let body;
   switch (screen.name) {
     case 'home':
-      body = <HomeScreen progress={progress} onOpenDeck={openDeck} onOpenSet={startSet} onNavigate={goTab} />;
+      body = <HomeScreen progress={progress} onReview={onReview} onOpenDeck={openDeck} onOpenSet={startSet} onNavigate={goTab} />;
       break;
     case 'decks':
       body = <DecksScreen progress={progress} onOpenDeck={openDeck} onNavigate={goTab} />;
@@ -131,19 +159,61 @@ export default function App() {
       body = <SettingsScreen progress={progress} onSetGoal={setGoal} onNavigate={goTab} />;
       break;
     case 'sets':
-      body = <SetsScreen deck={screen.deck} progress={progress} onOpenSet={startSet} onHome={goHome} />;
+      body = (
+        <SetsScreen
+          deck={screen.deck}
+          progress={progress}
+          onStudy={startSet}
+          onQuiz={startQuiz}
+          onBack={() => goTab('decks')}
+        />
+      );
       break;
     case 'study': {
       const s = screen.set;
+      const state = roundState(progress, s);
       body = (
         <StudyScreen
           deck={s.deck}
-          set={s.set}
-          state={roundState(progress, s)}
+          title={`${deckMeta(s.deck).name} · ${s.set + 1}세트`}
+          subtitle={`${state.round}회독 · 남은 카드 ${state.queue.length - state.pos}장`}
+          queue={state.queue}
+          pos={state.pos}
           revealed={revealed}
           onToggle={() => setRevealed((r) => !r)}
           onMark={(knew) => onMark(s, knew)}
           onBack={() => goSets(s.deck)}
+        />
+      );
+      break;
+    }
+    case 'quiz': {
+      const s = screen.set;
+      body = (
+        <QuizScreen
+          key={`${s.deck}:${s.set}`}
+          deck={s.deck}
+          set={s.set}
+          onAnswer={(id, correct) => quizAnswer(s.deck, id, correct)}
+          onFinish={(score, total) => recordQuiz(s, score, total)}
+          onBack={() => goSets(s.deck)}
+        />
+      );
+      break;
+    }
+    case 'review': {
+      const r = screen;
+      body = (
+        <StudyScreen
+          deck={r.deck}
+          title={`${deckMeta(r.deck).name} 복습`}
+          subtitle={`오늘 복습 · 남은 카드 ${r.queue.length - r.pos}장`}
+          queue={r.queue}
+          pos={r.pos}
+          revealed={revealed}
+          onToggle={() => setRevealed((x) => !x)}
+          onMark={(knew) => onReviewMark(r, knew)}
+          onBack={goHome}
         />
       );
       break;

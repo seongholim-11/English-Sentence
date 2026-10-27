@@ -1,59 +1,45 @@
-import { useState } from 'react';
-import { LayoutChangeEvent, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ComponentRef, useEffect, useRef } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bar, Btn, IconButton } from '../components/Bits';
-import { ArrowRightIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { CardDeckId, SET_SIZE, cardDecks, deckMeta, setCards, setCount } from '../data/decks';
 import { Progress, SetRef, roundState, setKey } from '../progress';
 import { colors } from '../theme';
 
-const GAP = 8;
-const MIN_TILE_H = 56;
-const MAX_TILE_H = 104;
+const CARD_H = 156;
+const GAP = 12;
 
 const withCommas = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-// 세트가 몇 개든 스크롤 없이 한 화면에 들어가도록 열 수를 고른다
-const fitGrid = (n: number, w: number, h: number) => {
-  for (let cols = 2; cols <= 8; cols++) {
-    const rows = Math.ceil(n / cols);
-    const tileH = (h - (rows - 1) * GAP) / rows;
-    if (tileH >= MIN_TILE_H || cols === 8) {
-      const h2 = Math.floor(Math.min(MAX_TILE_H, Math.max(tileH, MIN_TILE_H)));
-      return { tileW: Math.floor((w - (cols - 1) * GAP) / cols), tileH: h2, overflow: rows * (h2 + GAP) - GAP > h };
-    }
-  }
-  return null;
-};
 
 type Props = {
   deck: CardDeckId;
   progress: Progress;
-  onOpenSet: (s: SetRef) => void;
-  onHome: () => void;
+  onStudy: (s: SetRef) => void;
+  onQuiz: (s: SetRef) => void;
+  onBack: () => void;
 };
 
-export function SetsScreen({ deck, progress, onOpenSet, onHome }: Props) {
+// 세트마다 큰 카드 하나: 암기와 퀴즈 버튼이 들어 있다
+export function SetsScreen({ deck, progress, onStudy, onQuiz, onBack }: Props) {
   const insets = useSafeAreaInsets();
-  const [area, setArea] = useState<{ w: number; h: number } | null>(null);
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const meta = deckMeta(deck);
   const total = cardDecks[deck].length;
   const count = setCount(deck);
   const mastered = new Set(progress.mastered[deck]);
   const last = progress.lastSet?.deck === deck ? progress.lastSet.set : 0;
-  const grid = area ? fitGrid(count, area.w, area.h) : null;
 
-  const onLayout = (e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    setArea({ w: width, h: height });
-  };
+  // 마지막으로 공부한 세트가 보이는 위치에서 시작한다
+  useEffect(() => {
+    scroll.current?.scrollTo({ y: Math.max(0, last * (CARD_H + GAP) - 8), animated: false });
+  }, []);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 30) }]}>
+    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 20) }]}>
       <View style={styles.header}>
-        <IconButton label="홈으로" onPress={onHome} />
+        <IconButton label="덱 목록으로" onPress={onBack} />
         <View style={{ flex: 1, gap: 2 }}>
           <Txt size={16} weight={600}>
             {meta.name}
@@ -68,66 +54,47 @@ export function SetsScreen({ deck, progress, onOpenSet, onHome }: Props) {
       </View>
       <Bar pct={(mastered.size / total) * 100} color={meta.color} track={colors.border} height={6} />
 
-      <View style={{ flex: 1 }} onLayout={onLayout}>
-        {grid && (
-          <ScrollView scrollEnabled={grid.overflow} contentContainerStyle={styles.grid}>
-            {Array.from({ length: count }, (_, set) => {
-              const cards = setCards(deck, set);
-              const done = cards.filter((c) => mastered.has(c.id)).length;
-              const started = !!progress.sets[setKey({ deck, set })];
-              const round = roundState(progress, { deck, set }).round;
-              const complete = done === cards.length;
-              const current = set === last;
-              const roomy = grid.tileH >= 80;
-              return (
-                <Pressable
-                  key={set}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${set + 1}세트, ${cards.length}장 중 ${done}장 외움`}
-                  onPress={() => onOpenSet({ deck, set })}
-                  style={({ pressed }) => [
-                    styles.tile,
-                    { width: grid.tileW, height: grid.tileH, padding: grid.tileW < 60 ? 8 : 12 },
-                    complete && { backgroundColor: meta.soft, borderColor: meta.soft },
-                    current && { borderColor: meta.color, borderWidth: 2 },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <View style={styles.tileTop}>
-                    <Txt size={grid.tileW < 60 ? 17 : 20} weight={700} color={complete ? meta.deep : colors.ink} tabular>
-                      {String(set + 1)}
-                    </Txt>
-                    {roomy && started && (
-                      <Txt size={11} weight={500} color={colors.muted}>
-                        {`${round}회독`}
-                      </Txt>
-                    )}
-                  </View>
-                  {roomy && (
-                    <Txt size={11} color={colors.muted} tabular>
-                      {`${set * SET_SIZE + 1}–${set * SET_SIZE + cards.length}`}
-                    </Txt>
-                  )}
-                  <View style={{ marginTop: 'auto' }}>
-                    <Bar pct={(done / cards.length) * 100} color={meta.color} track={colors.track} height={4} />
-                  </View>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
-      </View>
-
-      <Btn
-        label={`${last + 1}세트 ${roundState(progress, { deck, set: last }).round}회독 이어서`}
-        primary
-        accent={colors.accent}
-        height={56}
-        size={15}
-        onPress={() => onOpenSet({ deck, set: last })}
-        icon={<ArrowRightIcon />}
-        style={{ flexDirection: 'row-reverse', borderWidth: 0 }}
-      />
+      <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ gap: GAP }} showsVerticalScrollIndicator={false}>
+        {Array.from({ length: count }, (_, set) => {
+          const ref = { deck, set };
+          const cards = setCards(deck, set);
+          const done = cards.filter((c) => mastered.has(c.id)).length;
+          const started = !!progress.sets[setKey(ref)];
+          const round = roundState(progress, ref).round;
+          const quiz = progress.quiz[setKey(ref)];
+          const complete = done === cards.length;
+          return (
+            <View
+              key={set}
+              style={[
+                styles.card,
+                complete && { backgroundColor: meta.soft, borderColor: meta.soft },
+                set === last && { borderColor: meta.color, borderWidth: 2 },
+              ]}
+            >
+              <View style={styles.top}>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 }}>
+                  <Txt size={30} weight={700} color={complete ? meta.deep : colors.ink} tabular style={{ letterSpacing: -0.9 }}>
+                    {String(set + 1)}
+                  </Txt>
+                  <Txt size={13} color={colors.muted} tabular>
+                    {`${set * SET_SIZE + 1}–${set * SET_SIZE + cards.length}`}
+                  </Txt>
+                </View>
+                <Txt size={12} weight={500} color={colors.muted} tabular>
+                  {`${started ? `${round}회독 · ` : ''}${done} / ${cards.length}장`}
+                  {quiz ? ` · 퀴즈 ${quiz.best}/${quiz.total}` : ''}
+                </Txt>
+              </View>
+              <Bar pct={(done / cards.length) * 100} color={meta.color} track={colors.track} height={4} />
+              <View style={styles.actions}>
+                <Btn label="암기" primary accent={colors.ink} height={46} size={15} onPress={() => onStudy(ref)} style={{ flex: 1, borderWidth: 0 }} />
+                <Btn label="퀴즈" primary accent={meta.color} height={46} size={15} onPress={() => onQuiz(ref)} style={{ flex: 1, borderWidth: 0 }} />
+              </View>
+            </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -135,13 +102,15 @@ export function SetsScreen({ deck, progress, onOpenSet, onHome }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
-  tile: {
+  card: {
+    height: CARD_H,
+    justifyContent: 'space-between',
+    padding: 16,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
-    gap: 2,
+    borderRadius: 22,
   },
-  tileTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  actions: { flexDirection: 'row', gap: 10 },
 });

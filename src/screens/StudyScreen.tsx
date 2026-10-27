@@ -6,25 +6,26 @@ import { Bar, Btn, Chip, DashedLine, IconButton } from '../components/Bits';
 import { AgainIcon, CheckIcon, SpeakerIcon, TapIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { CardDeckId, cardDecks, deckMeta, speakText } from '../data/decks';
-import { RoundState } from '../progress';
 import { colors } from '../theme';
 
 type Props = {
   deck: CardDeckId;
-  set: number;
-  state: RoundState;
+  title: string;
+  subtitle: string;
+  queue: string[];
+  pos: number;
   revealed: boolean;
   onToggle: () => void;
   onMark: (knew: boolean) => void;
   onBack: () => void;
 };
 
-export function StudyScreen({ deck, set, state, revealed, onToggle, onMark, onBack }: Props) {
+export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, onToggle, onMark, onBack }: Props) {
   const insets = useSafeAreaInsets();
   const meta = deckMeta(deck);
   const cards = cardDecks[deck];
-  const card = cards.find((c) => c.id === state.queue[state.pos]) ?? cards[0];
-  const total = state.queue.length;
+  const card = cards.find((c) => c.id === queue[pos]) ?? cards[0];
+  const total = queue.length;
   // 문장 덱은 앞면이 한국어라 뜻을 본 뒤에만 영어를 읽어 준다
   const canSpeak = deck !== 'sentences' || revealed;
 
@@ -36,20 +37,20 @@ export function StudyScreen({ deck, set, state, revealed, onToggle, onMark, onBa
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 30) }]}>
       <View style={styles.header}>
-        <IconButton label="세트 목록으로" onPress={onBack} />
+        <IconButton label="뒤로" onPress={onBack} />
         <View style={{ flex: 1, gap: 2 }}>
           <Txt size={16} weight={600}>
-            {`${meta.name} · ${set + 1}세트`}
+            {title}
           </Txt>
           <Txt size={12} color={colors.muted}>
-            {`${state.round}회독 · 남은 카드 ${total - state.pos}장`}
+            {subtitle}
           </Txt>
         </View>
         <Txt size={15} weight={600} tabular>
-          {`${state.pos + 1} / ${total}`}
+          {`${pos + 1} / ${total}`}
         </Txt>
       </View>
-      <Bar pct={(state.pos / total) * 100} color={colors.accent} track={colors.border} height={6} />
+      <Bar pct={(pos / total) * 100} color={colors.accent} track={colors.border} height={6} />
 
       <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.card}>
         <View style={styles.cardTop}>

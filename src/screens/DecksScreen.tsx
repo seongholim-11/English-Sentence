@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bar } from '../components/Bits';
 import { BottomNav, Tab } from '../components/BottomNav';
+import { SearchIcon, StarIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { DeckId, DeckMeta, decks, setCount } from '../data/decks';
 import { Progress } from '../progress';
@@ -12,13 +13,14 @@ import { deckStats } from './HomeScreen';
 type Props = {
   progress: Progress;
   onOpenDeck: (id: DeckId) => void;
+  onSearch: (favorites: boolean) => void;
   onNavigate: (t: Tab) => void;
 };
 
 const detail = (d: DeckMeta, p: Progress) =>
   d.id === 'dialogue' ? `${p.dialogue.round}회독 중` : `${setCount(d.id)}세트 · 50장씩`;
 
-export function DecksScreen({ progress, onOpenDeck, onNavigate }: Props) {
+export function DecksScreen({ progress, onOpenDeck, onSearch, onNavigate }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.root}>
@@ -30,6 +32,30 @@ export function DecksScreen({ progress, onOpenDeck, onNavigate }: Props) {
           <Txt size={28} weight={700} style={styles.tight}>
             덱
           </Txt>
+        </View>
+        <View style={styles.tools}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="카드 검색"
+            onPress={() => onSearch(false)}
+            style={({ pressed }) => [styles.search, pressed && { opacity: 0.85 }]}
+          >
+            <SearchIcon />
+            <Txt size={14} color={colors.muted}>
+              단어, 뜻, 문장 검색
+            </Txt>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="즐겨찾기"
+            onPress={() => onSearch(true)}
+            style={({ pressed }) => [styles.fav, pressed && { opacity: 0.85 }]}
+          >
+            <StarIcon color="#F2A91B" filled={progress.favorites.length > 0} size={16} />
+            <Txt size={14} weight={600} tabular>
+              {String(progress.favorites.length)}
+            </Txt>
+          </Pressable>
         </View>
         <View style={styles.list}>
           {decks.map((d) => {
@@ -73,8 +99,32 @@ export function DecksScreen({ progress, onOpenDeck, onNavigate }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  body: { flex: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 20 },
+  body: { flex: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
   tight: { letterSpacing: -0.56 },
+  tools: { flexDirection: 'row', gap: 10 },
+  search: {
+    flex: 1,
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  fav: {
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   list: { flex: 1, gap: 12 },
   row: {
     flex: 1,

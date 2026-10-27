@@ -20,13 +20,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Tab } from './src/components/BottomNav';
 import { CardDeckId, DeckId, deckMeta } from './src/data/decks';
 import { dialogues } from './src/data/dialogues';
-import { RoundResult, SetRef, dueIds, roundState, useProgress } from './src/progress';
+import { RoundResult, SetRef, dueIds, isFavorite, roundState, useProgress } from './src/progress';
 import { DialogueScreen, HideMode } from './src/screens/DialogueScreen';
 import { DecksScreen } from './src/screens/DecksScreen';
 import { DoneScreen } from './src/screens/DoneScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { QuizScreen } from './src/screens/QuizScreen';
+import { SearchScreen } from './src/screens/SearchScreen';
 import { SetsScreen } from './src/screens/SetsScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
@@ -34,11 +35,15 @@ import { colors } from './src/theme';
 
 const REVIEW_MAX = 20;
 
+// 학습·복습 화면이 보여 주는 카드가 속한 덱
+const DECK_OF = (s: Screen): CardDeckId => (s.name === 'study' ? s.set.deck : s.name === 'review' ? s.deck : 'words');
+
 type Screen =
   | { name: Tab }
   | { name: 'sets'; deck: CardDeckId }
   | { name: 'study'; set: SetRef }
   | { name: 'quiz'; set: SetRef }
+  | { name: 'search'; favorites: boolean }
   | { name: 'review'; deck: CardDeckId; queue: string[]; pos: number }
   | { name: 'dialogue' }
   | { name: 'done'; result: RoundResult };
@@ -54,7 +59,7 @@ export default function App() {
     IBMPlexSansKR_600SemiBold,
     IBMPlexSansKR_700Bold,
   });
-  const { progress, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
+  const { progress, toggleFavorite, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
@@ -82,7 +87,7 @@ export default function App() {
       if (screen.name === 'home') return false;
       if (screen.name === 'study' || screen.name === 'quiz') goSets(screen.set.deck);
       else if (screen.name === 'done') goSets(screen.result.deck);
-      else if (screen.name === 'sets') goTab('decks');
+      else if (screen.name === 'sets' || screen.name === 'search') goTab('decks');
       else goHome();
       return true;
     });
@@ -150,7 +155,15 @@ export default function App() {
       body = <HomeScreen progress={progress} onReview={onReview} onOpenDeck={openDeck} onOpenSet={startSet} onNavigate={goTab} />;
       break;
     case 'decks':
-      body = <DecksScreen progress={progress} onOpenDeck={openDeck} onNavigate={goTab} />;
+      body = <DecksScreen
+          progress={progress}
+          onOpenDeck={openDeck}
+          onSearch={(favorites) => {
+            Speech.stop();
+            setScreen({ name: 'search', favorites });
+          }}
+          onNavigate={goTab}
+        />;
       break;
     case 'stats':
       body = <StatsScreen progress={progress} onNavigate={goTab} />;
@@ -182,6 +195,8 @@ export default function App() {
           revealed={revealed}
           rate={progress.prefs.speechRate}
           autoSpeak={progress.prefs.autoSpeak}
+          isFavorite={(id) => isFavorite(progress, DECK_OF(screen), id)}
+          onFavorite={(id) => toggleFavorite(DECK_OF(screen), id)}
           onToggle={() => setRevealed((r) => !r)}
           onMark={(knew) => onMark(s, knew)}
           onBack={() => goSets(s.deck)}
@@ -189,6 +204,16 @@ export default function App() {
       );
       break;
     }
+    case 'search':
+      body = (
+        <SearchScreen
+          progress={progress}
+          initialFavorites={screen.favorites}
+          onToggleFavorite={toggleFavorite}
+          onBack={() => goTab('decks')}
+        />
+      );
+      break;
     case 'quiz': {
       const s = screen.set;
       body = (
@@ -215,6 +240,8 @@ export default function App() {
           revealed={revealed}
           rate={progress.prefs.speechRate}
           autoSpeak={progress.prefs.autoSpeak}
+          isFavorite={(id) => isFavorite(progress, DECK_OF(screen), id)}
+          onFavorite={(id) => toggleFavorite(DECK_OF(screen), id)}
           onToggle={() => setRevealed((x) => !x)}
           onMark={(knew) => onReviewMark(r, knew)}
           onBack={goHome}

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bar, Btn, Chip, DashedLine, IconButton } from '../components/Bits';
-import { AgainIcon, CheckIcon, SpeakerIcon, TapIcon } from '../components/Icons';
+import { AgainIcon, CheckIcon, SpeakerIcon, StarIcon, TapIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { CardDeckId, cardDecks, deckMeta, speakText } from '../data/decks';
 import { colors } from '../theme';
@@ -18,12 +18,14 @@ type Props = {
   revealed: boolean;
   rate: number;
   autoSpeak: boolean;
+  isFavorite: (id: string) => boolean;
+  onFavorite: (id: string) => void;
   onToggle: () => void;
   onMark: (knew: boolean) => void;
   onBack: () => void;
 };
 
-export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate, autoSpeak, onToggle, onMark, onBack }: Props) {
+export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate, autoSpeak, isFavorite, onFavorite, onToggle, onMark, onBack }: Props) {
   const insets = useSafeAreaInsets();
   const meta = deckMeta(deck);
   const cards = cardDecks[deck];
@@ -63,11 +65,22 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
       <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.card}>
         <View style={styles.cardTop}>
           <Chip label={card.tag} bg={meta.soft} fg={meta.deep} />
-          {canSpeak && (
-            <Pressable accessibilityRole="button" accessibilityLabel="발음 듣기" onPress={speak} hitSlop={8} style={styles.speak}>
-              <SpeakerIcon />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={isFavorite(card.id) ? '즐겨찾기 해제' : '즐겨찾기'}
+              onPress={() => onFavorite(card.id)}
+              hitSlop={8}
+              style={styles.speak}
+            >
+              <StarIcon filled={isFavorite(card.id)} color={isFavorite(card.id) ? '#F2A91B' : colors.muted} />
             </Pressable>
-          )}
+            {canSpeak && (
+              <Pressable accessibilityRole="button" accessibilityLabel="발음 듣기" onPress={speak} hitSlop={8} style={styles.speak}>
+                <SpeakerIcon />
+              </Pressable>
+            )}
+          </View>
         </View>
         <View style={styles.front}>
           <Txt size={meta.bigFront ? 44 : 28} weight={700} lineHeight={1.2} style={{ letterSpacing: meta.bigFront ? -0.88 : -0.56 }}>

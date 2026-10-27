@@ -89,3 +89,16 @@ export const SettingsIcon = ({ size = 22, color = '#6B6F78', strokeWidth = 2 }: 
     <Circle cx="10" cy="17" r="2" />
   </Svg>
 );
+
+export const StarIcon = ({ size = 18, color = '#5D616B', strokeWidth = 2, filled = false }: Props & { filled?: boolean }) => (
+  <Svg {...base(size, color, strokeWidth)} fill={filled ? color : 'none'}>
+    <Path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.7l5.9-.9z" />
+  </Svg>
+);
+
+export const SearchIcon = ({ size = 18, color = '#5D616B', strokeWidth = 2 }: Props) => (
+  <Svg {...base(size, color, strokeWidth)}>
+    <Circle cx="11" cy="11" r="6.5" />
+    <Path d="M16 16l4.5 4.5" />
+  </Svg>
+);

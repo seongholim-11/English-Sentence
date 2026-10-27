@@ -65,22 +65,15 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
       <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.card}>
         <View style={styles.cardTop}>
           <Chip label={card.tag} bg={meta.soft} fg={meta.deep} />
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={isFavorite(card.id) ? '즐겨찾기 해제' : '즐겨찾기'}
-              onPress={() => onFavorite(card.id)}
-              hitSlop={8}
-              style={styles.speak}
-            >
-              <StarIcon filled={isFavorite(card.id)} color={isFavorite(card.id) ? '#F2A91B' : colors.muted} />
-            </Pressable>
-            {canSpeak && (
-              <Pressable accessibilityRole="button" accessibilityLabel="발음 듣기" onPress={speak} hitSlop={8} style={styles.speak}>
-                <SpeakerIcon />
-              </Pressable>
-            )}
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isFavorite(card.id) ? '즐겨찾기 해제' : '즐겨찾기'}
+            onPress={() => onFavorite(card.id)}
+            hitSlop={4}
+            style={styles.star}
+          >
+            <StarIcon size={22} filled={isFavorite(card.id)} color={isFavorite(card.id) ? '#F2A91B' : colors.muted} />
+          </Pressable>
         </View>
         <View style={styles.front}>
           <Txt size={meta.bigFront ? 44 : 28} weight={700} lineHeight={1.2} style={{ letterSpacing: meta.bigFront ? -0.88 : -0.56 }}>
@@ -107,14 +100,33 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
               </View>
             </View>
           </View>
-        ) : (
-          <View style={styles.tapHint}>
+        ) : null}
+        <View style={styles.cardButtons}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="영어 발음 듣기"
+              accessibilityHint={canSpeak ? undefined : '뜻을 본 뒤에 들을 수 있어요'}
+              accessibilityState={{ disabled: !canSpeak }}
+              disabled={!canSpeak}
+              onPress={speak}
+              style={({ pressed }) => [styles.listen, !canSpeak && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}
+            >
+              <SpeakerIcon size={26} color={colors.accent} />
+              <Txt size={17} weight={600} color={colors.accent}>
+                {canSpeak ? '발음 듣기' : '뜻을 보면 들을 수 있어요'}
+              </Txt>
+            </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onToggle}
+            style={({ pressed }) => [styles.listen, styles.reveal, pressed && { opacity: 0.8 }]}
+          >
             <TapIcon />
-            <Txt size={13} color={colors.muted}>
-              탭해서 뜻 보기
+            <Txt size={17} weight={600} color={colors.ink}>
+              {revealed ? '뜻 숨기기' : '뜻 보기'}
             </Txt>
-          </View>
-        )}
+          </Pressable>
+        </View>
       </Pressable>
 
       <View style={styles.actions}>
@@ -138,21 +150,34 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 28,
-    padding: 24,
-    gap: 16,
+    padding: 20,
+    gap: 12,
     boxShadow: '0 12px 32px rgba(21,23,28,0.06)',
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  speak: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  star: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.exampleBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  listen: {
+    minHeight: 52,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 28,
+    backgroundColor: colors.accentTint,
+  },
+  reveal: { backgroundColor: colors.exampleBg },
+  cardButtons: { gap: 8 },
   front: { flex: 1, justifyContent: 'center', gap: 10 },
   example: { gap: 4, padding: 14, borderRadius: 16, backgroundColor: colors.exampleBg },
-  tapHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   actions: { flexDirection: 'row', gap: 10 },
 }));

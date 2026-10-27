@@ -54,7 +54,7 @@ export default function App() {
     IBMPlexSansKR_600SemiBold,
     IBMPlexSansKR_700Bold,
   });
-  const { progress, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
+  const { progress, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
@@ -156,7 +156,7 @@ export default function App() {
       body = <StatsScreen progress={progress} onNavigate={goTab} />;
       break;
     case 'settings':
-      body = <SettingsScreen progress={progress} onSetGoal={setGoal} onNavigate={goTab} />;
+      body = <SettingsScreen progress={progress} onSetGoal={setGoal} onSetPrefs={setPrefs} onNavigate={goTab} />;
       break;
     case 'sets':
       body = (
@@ -180,6 +180,8 @@ export default function App() {
           queue={state.queue}
           pos={state.pos}
           revealed={revealed}
+          rate={progress.prefs.speechRate}
+          autoSpeak={progress.prefs.autoSpeak}
           onToggle={() => setRevealed((r) => !r)}
           onMark={(knew) => onMark(s, knew)}
           onBack={() => goSets(s.deck)}
@@ -211,6 +213,8 @@ export default function App() {
           queue={r.queue}
           pos={r.pos}
           revealed={revealed}
+          rate={progress.prefs.speechRate}
+          autoSpeak={progress.prefs.autoSpeak}
           onToggle={() => setRevealed((x) => !x)}
           onMark={(knew) => onReviewMark(r, knew)}
           onBack={goHome}
@@ -235,6 +239,7 @@ export default function App() {
           onReset={() => setShown({})}
           onDone={onDialogueDone}
           onHome={goHome}
+          rate={progress.prefs.speechRate}
         />
       );
       break;

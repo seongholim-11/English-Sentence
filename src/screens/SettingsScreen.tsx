@@ -1,9 +1,10 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import * as Speech from 'expo-speech';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, Tab } from '../components/BottomNav';
 import { Txt } from '../components/Txt';
-import { GOAL_MAX, GOAL_MIN, Progress } from '../progress';
+import { GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES } from '../progress';
 import { colors } from '../theme';
 
 const PRESETS = [10, 20, 30, 50, 100];
@@ -12,10 +13,12 @@ const STEP = 5;
 export function SettingsScreen({
   progress,
   onSetGoal,
+  onSetPrefs,
   onNavigate,
 }: {
   progress: Progress;
   onSetGoal: (n: number) => void;
+  onSetPrefs: (p: Partial<Prefs>) => void;
   onNavigate: (t: Tab) => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -23,7 +26,11 @@ export function SettingsScreen({
 
   return (
     <View style={styles.root}>
-      <View style={[styles.body, { paddingTop: insets.top + 16 }]}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.body, { paddingTop: insets.top + 16 }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={{ gap: 4 }}>
           <Txt size={13} weight={500} color={colors.muted}>
             나에게 맞게
@@ -77,6 +84,56 @@ export function SettingsScreen({
         </View>
 
         <View style={styles.card}>
+          <View style={{ gap: 4 }}>
+            <Txt size={17} weight={600}>
+              발음
+            </Txt>
+            <Txt size={13} color={colors.muted}>
+              카드의 스피커 버튼과 대화문에서 읽어 주는 속도예요.
+            </Txt>
+          </View>
+          <View style={styles.presets}>
+            {SPEECH_RATES.map(({ label, rate }) => {
+              const on = rate === progress.prefs.speechRate;
+              return (
+                <Pressable
+                  key={rate}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => {
+                    onSetPrefs({ speechRate: rate });
+                    Speech.stop();
+                    Speech.speak('How are you doing today?', { language: 'en-US', rate });
+                  }}
+                  style={[styles.preset, on && { backgroundColor: colors.ink, borderColor: colors.ink }]}
+                >
+                  <Txt size={14} weight={600} color={on ? colors.white : colors.ink}>
+                    {label}
+                  </Txt>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={styles.infoRow}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Txt size={15} weight={600}>
+                자동 재생
+              </Txt>
+              <Txt size={13} color={colors.muted}>
+                카드를 넘기면 바로 읽어 줘요
+              </Txt>
+            </View>
+            <Switch
+              accessibilityLabel="자동 재생"
+              value={progress.prefs.autoSpeak}
+              onValueChange={(v) => onSetPrefs({ autoSpeak: v })}
+              trackColor={{ true: colors.accent, false: colors.borderStrong }}
+              thumbColor={colors.white}
+            />
+          </View>
+        </View>
+
+        <View style={styles.card}>
           <View style={styles.infoRow}>
             <Txt size={15} weight={600}>
               앱 이름
@@ -94,7 +151,7 @@ export function SettingsScreen({
             </Txt>
           </View>
         </View>
-      </View>
+      </ScrollView>
       <BottomNav active="settings" onNavigate={onNavigate} />
     </View>
   );
@@ -118,7 +175,7 @@ function Stepper({ label, sign, disabled, onPress }: { label: string; sign: stri
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  body: { flex: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
+  body: { paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
   tight: { letterSpacing: -0.56 },
   card: {
     backgroundColor: colors.white,

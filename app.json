@@ -22,6 +22,9 @@
       "favicon": "./assets/favicon.png",
       "name": "다시봄"
     },
-    "backgroundColor": "#F3F3EF"
+    "backgroundColor": "#F3F3EF",
+    "plugins": [
+      "expo-notifications"
+    ]
   }
 }

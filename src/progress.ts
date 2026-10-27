@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CardDeckId, DeckId, cardDecks, setCards, setCount } from './data/decks';
 import { dialogues } from './data/dialogues';
+import { Reminder, defaultReminder } from './reminder';
 import { DAILY_GOAL } from './theme';
 
 // 한 세트의 현재 회독: queue는 이번 회독에 도는 카드 id 목록
@@ -21,6 +22,8 @@ export type Prefs = {
   speechRate: number;
   // 카드를 넘기면 자동으로 읽어 주기
   autoSpeak: boolean;
+  // 매일 복습 알림
+  reminder: Reminder;
 };
 
 export const SPEECH_RATES: { label: string; rate: number }[] = [
@@ -29,7 +32,7 @@ export const SPEECH_RATES: { label: string; rate: number }[] = [
   { label: '빠르게', rate: 1.1 },
 ];
 
-export const defaultPrefs = (): Prefs => ({ speechRate: 0.9, autoSpeak: false });
+export const defaultPrefs = (): Prefs => ({ speechRate: 0.9, autoSpeak: false, reminder: defaultReminder() });
 
 export type CardState = { box: number; due: string };
 
@@ -177,6 +180,7 @@ const sanitize = (raw: Partial<Progress>): Progress => {
   if (raw.today?.date === p.today.date) p.history[p.today.date] = Math.max(p.history[p.today.date] ?? 0, p.today.count);
   p.goal = clampGoal(raw.goal ?? DAILY_GOAL);
   p.prefs = { ...defaultPrefs(), ...raw.prefs };
+  p.prefs.reminder = { ...defaultReminder(), ...raw.prefs?.reminder };
   p.favorites = (raw.favorites ?? []).filter((k) => {
     const i = k.indexOf(':');
     return CARD_DECKS.includes(k.slice(0, i) as CardDeckId) && cardIds[k.slice(0, i) as CardDeckId].has(k.slice(i + 1));

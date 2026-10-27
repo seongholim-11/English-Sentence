@@ -25,7 +25,7 @@ export type Progress = {
 };
 
 const STORAGE_KEY = 'dasibom/progress/v1';
-const CARD_DECKS: CardDeckId[] = ['words', 'phrasal', 'sentences'];
+const CARD_DECKS = Object.keys(cardDecks) as CardDeckId[];
 
 const allIds = (deck: CardDeckId) => cardDecks[deck].map((c) => c.id);
 
@@ -46,13 +46,12 @@ const yesterdayKey = () => {
   return dateKey(d);
 };
 
+const perDeck = <T,>(fn: (deck: CardDeckId) => T) =>
+  Object.fromEntries(CARD_DECKS.map((d) => [d, fn(d)])) as Record<CardDeckId, T>;
+
 const initialProgress = (): Progress => ({
-  decks: {
-    words: freshRound('words', 1),
-    phrasal: freshRound('phrasal', 1),
-    sentences: freshRound('sentences', 1),
-  },
-  mastered: { words: [], phrasal: [], sentences: [] },
+  decks: perDeck((d) => freshRound(d, 1)),
+  mastered: perDeck(() => []),
   dialogue: { round: 1, pos: 0 },
   lastDeck: 'phrasal',
   today: { date: dateKey(), count: 0 },
@@ -63,7 +62,7 @@ const initialProgress = (): Progress => ({
 // 저장된 데이터에 지금 콘텐츠에 없는 카드 id가 있으면 걸러 낸다
 const sanitize = (raw: Partial<Progress>): Progress => {
   const base = initialProgress();
-  const p: Progress = { ...base, ...raw } as Progress;
+  const p: Progress = { ...base, ...raw, decks: { ...base.decks }, mastered: { ...base.mastered } } as Progress;
   for (const deck of CARD_DECKS) {
     const ids = new Set(allIds(deck));
     const r = raw.decks?.[deck];

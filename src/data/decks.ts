@@ -1,3 +1,5 @@
+import { frequencyParts } from './frequency';
+
 export type Card = {
   id: string;
   tag: string;
@@ -8,7 +10,7 @@ export type Card = {
   exKo: string;
 };
 
-export type CardDeckId = 'words' | 'phrasal' | 'sentences';
+export type CardDeckId = 'words' | 'phrasal' | 'sentences' | 'freq1' | 'freq2' | 'freq3' | 'freq4';
 export type DeckId = CardDeckId | 'dialogue';
 
 export type DeckMeta = {
@@ -148,7 +150,9 @@ const sentences: Card[] = [
   card('한국어 → 영어', '실망시키지 않을게.', '영어로 말해 보세요', "I won't let you down.", 'let down = 실망시키다', '약속할 때 자주 쓰는 말'),
 ];
 
-export const cardDecks: Record<CardDeckId, Card[]> = { words, phrasal, sentences };
+const [freq1, freq2, freq3, freq4] = frequencyParts;
+
+export const cardDecks: Record<CardDeckId, Card[]> = { words, phrasal, sentences, freq1, freq2, freq3, freq4 };
 
 export const decks: DeckMeta[] = [
   { id: 'words', name: '영단어', sub: 'Vocabulary', mono: 'Aa', color: '#2F5BFF', soft: '#E7ECFF', deep: '#2140C4', bigFront: true },
@@ -157,7 +161,15 @@ export const decks: DeckMeta[] = [
   { id: 'dialogue', name: '대화문', sub: 'Dialogues', mono: 'A·B', color: '#7A4DE0', soft: '#ECE4FB', deep: '#5630B0', bigFront: false },
 ];
 
-export const deckMeta = (id: DeckId): DeckMeta => decks.find((d) => d.id === id) ?? decks[1];
+// 회화 빈도순 단어 2,000개를 500개씩 나눈 덱
+export const frequencyDecks: DeckMeta[] = [
+  { id: 'freq1', name: '빈도 1–500', sub: 'Top words', mono: '1', color: '#0E9AAE', soft: '#DDF3F6', deep: '#0B6B7A', bigFront: true },
+  { id: 'freq2', name: '빈도 501–1000', sub: 'Top words', mono: '2', color: '#D9488A', soft: '#FBE3EE', deep: '#9C2560', bigFront: true },
+  { id: 'freq3', name: '빈도 1001–1500', sub: 'Top words', mono: '3', color: '#5E8C1F', soft: '#E8F1DA', deep: '#43651A', bigFront: true },
+  { id: 'freq4', name: `빈도 1501–${1500 + frequencyParts[3].length}`, sub: 'Top words', mono: '4', color: '#B7791F', soft: '#F8ECD7', deep: '#7C5112', bigFront: true },
+];
+
+export const deckMeta = (id: DeckId): DeckMeta => [...decks, ...frequencyDecks].find((d) => d.id === id) ?? decks[1];
 
 // 학습 카드에서 읽어 줄 영어: 문장 덱은 앞면이 한국어라 뒷면을 읽는다
 export const speakText = (deck: CardDeckId, c: Card): string => (deck === 'sentences' ? c.back : c.front);

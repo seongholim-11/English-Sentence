@@ -5,10 +5,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bar } from '../components/Bits';
 import { ArrowRightIcon, DecksIcon, FlameIcon, HomeIcon, SettingsIcon, StatsIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
-import { DeckId, DeckMeta, cardDecks, deckMeta, decks } from '../data/decks';
+import { DeckId, DeckMeta, cardDecks, deckMeta, decks, frequencyDecks } from '../data/decks';
 import { dialogues } from '../data/dialogues';
 import { Progress, todayCount, visibleStreak } from '../progress';
 import { DAILY_GOAL, colors } from '../theme';
+
+const frequencyTotal = frequencyDecks.reduce((n, d) => n + (d.id === 'dialogue' ? 0 : cardDecks[d.id].length), 0);
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -36,7 +38,6 @@ export function HomeScreen({ progress, onOpenDeck }: Props) {
   const seen = todayCount(progress);
   const left = Math.max(0, DAILY_GOAL - seen);
   const last = deckMeta(progress.lastDeck);
-  const rows = [decks.slice(0, 2), decks.slice(2, 4)];
 
   const soon = () => Alert.alert('준비 중이에요', '지금은 홈에서 덱을 골라 공부할 수 있어요.');
 
@@ -90,56 +91,14 @@ export function HomeScreen({ progress, onOpenDeck }: Props) {
           </Pressable>
         </View>
 
-        <View style={{ gap: 12 }}>
-          <View style={styles.sectionHead}>
-            <Txt size={17} weight={600}>
-              내 덱
-            </Txt>
-            <Txt size={13} color={colors.muted}>
-              탭해서 바로 시작
-            </Txt>
-          </View>
-          {rows.map((row, i) => (
-            <View key={i} style={styles.row}>
-              {row.map((d) => {
-                const s = deckStats(progress, d);
-                return (
-                  <Pressable
-                    key={d.id}
-                    accessibilityRole="button"
-                    onPress={() => onOpenDeck(d.id)}
-                    style={({ pressed }) => [styles.deck, pressed && { opacity: 0.85 }]}
-                  >
-                    <View style={styles.deckTop}>
-                      <View style={[styles.mono, { backgroundColor: d.soft }]}>
-                        <Txt size={13} weight={700} color={d.deep}>
-                          {d.mono}
-                        </Txt>
-                      </View>
-                      <Txt size={12} weight={500} color={colors.muted}>
-                        {`${roundOf(progress, d.id)}회독`}
-                      </Txt>
-                    </View>
-                    <View style={{ gap: 2 }}>
-                      <Txt size={17} weight={600}>
-                        {d.name}
-                      </Txt>
-                      <Txt size={12} color={colors.muted}>
-                        {d.sub}
-                      </Txt>
-                    </View>
-                    <View style={styles.deckBottom}>
-                      <Bar pct={s.pct} color={d.color} track={colors.track} height={4} />
-                      <Txt size={12} color={colors.muted} tabular>
-                        {s.progress}
-                      </Txt>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ))}
-        </View>
+        <DeckSection title="내 덱" note="탭해서 바로 시작" list={decks} progress={progress} onOpenDeck={onOpenDeck} />
+        <DeckSection
+          title="회화 빈도순 단어"
+          note={`${String(frequencyTotal).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}개 · 영화·드라마 대사 기준`}
+          list={frequencyDecks}
+          progress={progress}
+          onOpenDeck={onOpenDeck}
+        />
       </ScrollView>
 
       <View style={[styles.nav, { paddingBottom: Math.max(insets.bottom, 16) }]}>
@@ -148,6 +107,76 @@ export function HomeScreen({ progress, onOpenDeck }: Props) {
         <NavTab label="기록" onPress={soon} icon={<StatsIcon />} />
         <NavTab label="설정" onPress={soon} icon={<SettingsIcon />} />
       </View>
+    </View>
+  );
+}
+
+function DeckSection({
+  title,
+  note,
+  list,
+  progress,
+  onOpenDeck,
+}: {
+  title: string;
+  note: string;
+  list: DeckMeta[];
+  progress: Progress;
+  onOpenDeck: (id: DeckId) => void;
+}) {
+  const rows: DeckMeta[][] = [];
+  for (let i = 0; i < list.length; i += 2) rows.push(list.slice(i, i + 2));
+
+  return (
+    <View style={{ gap: 12 }}>
+      <View style={styles.sectionHead}>
+        <Txt size={17} weight={600}>
+          {title}
+        </Txt>
+        <Txt size={13} color={colors.muted}>
+          {note}
+        </Txt>
+      </View>
+      {rows.map((row, i) => (
+        <View key={i} style={styles.row}>
+          {row.map((d) => {
+            const s = deckStats(progress, d);
+            return (
+              <Pressable
+                key={d.id}
+                accessibilityRole="button"
+                onPress={() => onOpenDeck(d.id)}
+                style={({ pressed }) => [styles.deck, pressed && { opacity: 0.85 }]}
+              >
+                <View style={styles.deckTop}>
+                  <View style={[styles.mono, { backgroundColor: d.soft }]}>
+                    <Txt size={13} weight={700} color={d.deep}>
+                      {d.mono}
+                    </Txt>
+                  </View>
+                  <Txt size={12} weight={500} color={colors.muted}>
+                    {`${roundOf(progress, d.id)}회독`}
+                  </Txt>
+                </View>
+                <View style={{ gap: 2 }}>
+                  <Txt size={17} weight={600}>
+                    {d.name}
+                  </Txt>
+                  <Txt size={12} color={colors.muted}>
+                    {d.sub}
+                  </Txt>
+                </View>
+                <View style={styles.deckBottom}>
+                  <Bar pct={s.pct} color={d.color} track={colors.track} height={4} />
+                  <Txt size={12} color={colors.muted} tabular>
+                    {s.progress}
+                  </Txt>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      ))}
     </View>
   );
 }

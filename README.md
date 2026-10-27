@@ -10,8 +10,13 @@
 | 구동사 | put off, figure out, run into, catch up 같은 구동사 · 예문 | 36장 |
 | 문장 | 한국어를 보고 영어로 말해 보기 (위 단어·구동사 활용) | 32장 |
 | 대화문 | 상황별 6줄 대화, 영어/한국어 가리기 | 12편 |
+| 회화 빈도순 단어 | 영화·드라마 대사에서 자주 나오는 단어 · 발음기호 · 뜻 · 예문 (500개씩 4덱) | 2,055개 |
 
 콘텐츠는 `src/data/decks.ts`, `src/data/dialogues.ts`에 있어서 카드를 쉽게 추가할 수 있습니다.
+
+회화 빈도순 단어는 `src/data/frequency/part1~4.ts`에 `[단어, 품사, 발음기호, 뜻, 예문, 예문 해석]` 형식으로 들어 있습니다.
+단어 선정은 OpenSubtitles 영어 자막 빈도 목록([FrequencyWords](https://github.com/hermitdave/FrequencyWords))을 원형 기준으로 묶어 순위를 매기고,
+관사·대명사 같은 기초 기능어, 감탄사, 인명, 비속어는 뺐습니다. 발음기호는 [CMU 발음 사전](https://github.com/cmusphinx/cmudict)의 미국식 발음을 IPA로 변환했습니다.
 
 ## 학습 방식
 

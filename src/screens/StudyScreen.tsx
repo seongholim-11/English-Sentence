@@ -82,20 +82,6 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
           <Txt size={14} color={colors.muted}>
             {card.hint}
           </Txt>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="영어 발음 듣기"
-            accessibilityHint={canSpeak ? undefined : '뜻을 본 뒤에 들을 수 있어요'}
-            accessibilityState={{ disabled: !canSpeak }}
-            disabled={!canSpeak}
-            onPress={speak}
-            style={({ pressed }) => [styles.listen, !canSpeak && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}
-          >
-            <SpeakerIcon size={26} color={colors.accent} />
-            <Txt size={17} weight={600} color={colors.accent}>
-              {canSpeak ? '발음 듣기' : '뜻을 보면 들을 수 있어요'}
-            </Txt>
-          </Pressable>
         </View>
         {revealed ? (
           <View style={{ gap: 12 }}>
@@ -114,14 +100,33 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
               </View>
             </View>
           </View>
-        ) : (
-          <View style={styles.tapHint}>
+        ) : null}
+        <View style={styles.cardButtons}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="영어 발음 듣기"
+              accessibilityHint={canSpeak ? undefined : '뜻을 본 뒤에 들을 수 있어요'}
+              accessibilityState={{ disabled: !canSpeak }}
+              disabled={!canSpeak}
+              onPress={speak}
+              style={({ pressed }) => [styles.listen, !canSpeak && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}
+            >
+              <SpeakerIcon size={26} color={colors.accent} />
+              <Txt size={17} weight={600} color={colors.accent}>
+                {canSpeak ? '발음 듣기' : '뜻을 보면 들을 수 있어요'}
+              </Txt>
+            </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onToggle}
+            style={({ pressed }) => [styles.listen, styles.reveal, pressed && { opacity: 0.8 }]}
+          >
             <TapIcon />
-            <Txt size={13} color={colors.muted}>
-              탭해서 뜻 보기
+            <Txt size={17} weight={600} color={colors.ink}>
+              {revealed ? '뜻 숨기기' : '뜻 보기'}
             </Txt>
-          </View>
-        )}
+          </Pressable>
+        </View>
       </Pressable>
 
       <View style={styles.actions}>
@@ -145,8 +150,8 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 28,
-    padding: 24,
-    gap: 16,
+    padding: 20,
+    gap: 12,
     boxShadow: '0 12px 32px rgba(21,23,28,0.06)',
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -159,19 +164,20 @@ const styles = createStyles(() => ({
     justifyContent: 'center',
   },
   listen: {
-    minHeight: 56,
-    marginTop: 8,
-    alignSelf: 'flex-start',
+    minHeight: 52,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 10,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 28,
     backgroundColor: colors.accentTint,
   },
+  reveal: { backgroundColor: colors.exampleBg },
+  cardButtons: { gap: 8 },
   front: { flex: 1, justifyContent: 'center', gap: 10 },
   example: { gap: 4, padding: 14, borderRadius: 16, backgroundColor: colors.exampleBg },
-  tapHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   actions: { flexDirection: 'row', gap: 10 },
 }));

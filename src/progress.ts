@@ -54,6 +54,8 @@ export type Progress = {
   // 하루 목표 카드 수 (설정 화면에서 바꾼다)
   goal: number;
   prefs: Prefs;
+  // 즐겨찾기한 카드. 키는 `${deck}:${cardId}`
+  favorites: string[];
   streak: number;
   lastStudyDate: string | null;
 };
@@ -102,6 +104,8 @@ export const dueIds = (p: Progress, deck: CardDeckId): string[] => {
     .map(([k]) => k.slice(prefix.length));
 };
 
+export const isFavorite = (p: Progress, deck: CardDeckId, id: string) => p.favorites.includes(cardKey(deck, id));
+
 export const dateKey = (d: Date = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -129,6 +133,7 @@ const initialProgress = (): Progress => ({
   history: {},
   goal: DAILY_GOAL,
   prefs: defaultPrefs(),
+  favorites: [],
   streak: 0,
   lastStudyDate: null,
 });
@@ -172,6 +177,10 @@ const sanitize = (raw: Partial<Progress>): Progress => {
   if (raw.today?.date === p.today.date) p.history[p.today.date] = Math.max(p.history[p.today.date] ?? 0, p.today.count);
   p.goal = clampGoal(raw.goal ?? DAILY_GOAL);
   p.prefs = { ...defaultPrefs(), ...raw.prefs };
+  p.favorites = (raw.favorites ?? []).filter((k) => {
+    const i = k.indexOf(':');
+    return CARD_DECKS.includes(k.slice(0, i) as CardDeckId) && cardIds[k.slice(0, i) as CardDeckId].has(k.slice(i + 1));
+  });
   return p;
 };
 
@@ -318,7 +327,16 @@ export function useProgress() {
 
   const setGoal = useCallback((goal: number) => update((p) => ({ ...p, goal: clampGoal(goal) })), [update]);
 
+  const toggleFavorite = useCallback(
+    (deck: CardDeckId, id: string) =>
+      update((p) => {
+        const key = cardKey(deck, id);
+        return { ...p, favorites: p.favorites.includes(key) ? p.favorites.filter((k) => k !== key) : p.favorites.concat([key]) };
+      }),
+    [update],
+  );
+
   const setPrefs = useCallback((prefs: Partial<Prefs>) => update((p) => ({ ...p, prefs: { ...p.prefs, ...prefs } })), [update]);
 
-  return { progress, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
+  return { progress, toggleFavorite, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
 }

@@ -20,11 +20,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "name": "다시봄"
+      "name": "다시봄",
+      "output": "single"
     },
     "backgroundColor": "#F3F3EF",
     "plugins": [
       "expo-notifications"
-    ]
+    ],
+    "experiments": {
+      "baseUrl": "/English-Sentence"
+    }
   }
 }

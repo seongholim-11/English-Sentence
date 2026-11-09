@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Btn, IconButton } from '../components/Bits';
@@ -9,10 +9,10 @@ import { colors, createStyles } from '../theme';
 
 export type HideMode = 'en' | 'ko' | 'none';
 
-const HIDE_OPTIONS: { id: HideMode; label: string }[] = [
-  { id: 'en', label: '영어 가리기' },
-  { id: 'ko', label: '한국어 가리기' },
-  { id: 'none', label: '모두 보기' },
+const HIDE_OPTIONS: { id: HideMode; label: string; short: string }[] = [
+  { id: 'en', label: '영어 가리기', short: '영어 가림' },
+  { id: 'ko', label: '한국어 가리기', short: '한글 가림' },
+  { id: 'none', label: '모두 보기', short: '모두 보기' },
 ];
 
 type Props = {
@@ -33,6 +33,8 @@ type Props = {
 export function DialogueScreen(props: Props) {
   const { dialogue, index, count, round, hide, shown, onHide, onToggleLine, onReset, onDone, onHome, rate } = props;
   const insets = useSafeAreaInsets();
+  // 좁은 화면에서는 가리기 버튼 문구를 줄여 한 줄에 담는다
+  const compact = useWindowDimensions().width < 360;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 30) }]}>
@@ -62,8 +64,8 @@ export function DialogueScreen(props: Props) {
               onPress={() => onHide(o.id)}
               style={[styles.segBtn, on && styles.segOn]}
             >
-              <Txt size={13} weight={600} color={on ? colors.ink : colors.muted}>
-                {o.label}
+              <Txt size={13} weight={600} color={on ? colors.ink : colors.muted} numberOfLines={1}>
+                {compact ? o.short : o.label}
               </Txt>
             </Pressable>
           );

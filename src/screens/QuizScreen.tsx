@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bar, Btn, Chip, IconButton } from '../components/Bits';
@@ -18,6 +18,9 @@ type Props = {
 
 export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
   const insets = useSafeAreaInsets();
+  // 작은 화면(iPhone SE급)에서는 여백·글자·보기 높이를 줄여 스크롤 없이 한 화면에 담는다
+  const { width, height } = useWindowDimensions();
+  const compact = height < 700 || width < 360;
   const meta = deckMeta(deck);
   const [round, setRound] = useState(0);
   const questions = useMemo(() => makeQuiz(deck, set), [deck, set, round]);
@@ -30,7 +33,7 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
   const score = total - wrong.length;
   const q = questions[idx];
 
-  const pad = { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 30) };
+  const pad = { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, compact ? 16 : 30), gap: compact ? 10 : 16 };
 
   const choose = (i: number) => {
     if (picked !== null) return;
@@ -116,16 +119,22 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
       </View>
       <Bar pct={(idx / total) * 100} color={colors.accent} track={colors.border} height={6} />
 
-      <View style={styles.card}>
-        <Txt size={q.kind === 'blank' || q.prompt.length > 24 ? 22 : 40} weight={700} lineHeight={1.3}>
-          {q.prompt}
-        </Txt>
-        <Txt size={14} color={colors.muted} lineHeight={1.4}>
-          {q.hint}
-        </Txt>
+      <View style={[styles.card, compact && { padding: 14 }]}>
+        <ScrollView contentContainerStyle={[styles.cardContent, compact && { gap: 8 }]} showsVerticalScrollIndicator={false}>
+          <Txt
+            size={q.kind === 'blank' || q.prompt.length > 24 ? (compact ? 18 : 22) : compact ? 32 : 40}
+            weight={700}
+            lineHeight={1.3}
+          >
+            {q.prompt}
+          </Txt>
+          <Txt size={compact ? 12 : 14} color={colors.muted} lineHeight={1.4}>
+            {q.hint}
+          </Txt>
+        </ScrollView>
       </View>
 
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: compact ? 6 : 10 }}>
         {q.choices.map((c, i) => {
           const isAnswer = i === q.answer;
           const state = picked === null ? null : isAnswer ? 'good' : i === picked ? 'bad' : null;
@@ -136,13 +145,14 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
               onPress={() => choose(i)}
               style={({ pressed }) => [
                 styles.choice,
+                compact && { minHeight: 44, paddingVertical: 6 },
                 state === 'good' && { backgroundColor: colors.goodSoft, borderColor: colors.good },
                 state === 'bad' && { backgroundColor: colors.badSoft, borderColor: colors.bad },
                 picked !== null && !state && { opacity: 0.5 },
                 pressed && picked === null && { opacity: 0.85 },
               ]}
             >
-              <Txt size={15} weight={500} lineHeight={1.35} style={{ flex: 1 }}>
+              <Txt size={compact ? 14 : 15} weight={500} lineHeight={1.3} style={{ flex: 1 }}>
                 {c}
               </Txt>
             </Pressable>
@@ -150,13 +160,13 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
         })}
       </View>
 
-      <View style={{ height: 56 }}>
+      <View style={{ height: compact ? 46 : 56 }}>
         {picked !== null && (
           <Btn
             label={idx + 1 >= total ? '결과 보기' : '다음 문제'}
             primary
             accent={picked === q.answer ? colors.good : colors.bad}
-            height={56}
+            height={compact ? 46 : 56}
             size={15}
             onPress={next}
             style={{ borderWidth: 0 }}
@@ -173,14 +183,14 @@ const styles = createStyles(() => ({
   card: {
     flex: 1,
     minHeight: 0,
-    justifyContent: 'center',
-    gap: 12,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 28,
     padding: 24,
   },
+  // 내용이 짧으면 가운데에 놓이고, 길어서 넘칠 때만 스크롤된다
+  cardContent: { flexGrow: 1, justifyContent: 'center', gap: 12 },
   choice: {
     minHeight: 54,
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, Tab } from '../components/BottomNav';
@@ -30,7 +30,7 @@ export function StatsScreen({ progress, onNavigate }: { progress: Progress; onNa
 
   return (
     <View style={styles.root}>
-      <View style={[styles.body, { paddingTop: insets.top + 16 }]}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.body, { paddingTop: insets.top + 16 }]} showsVerticalScrollIndicator={false}>
         <View style={{ gap: 4 }}>
           <Txt size={13} weight={500} color={colors.muted}>
             나의 공부 기록
@@ -102,7 +102,7 @@ export function StatsScreen({ progress, onNavigate }: { progress: Progress; onNa
             </View>
           ))}
         </View>
-      </View>
+      </ScrollView>
       <BottomNav active="stats" onNavigate={onNavigate} />
     </View>
   );
@@ -110,7 +110,7 @@ export function StatsScreen({ progress, onNavigate }: { progress: Progress; onNa
 
 const styles = createStyles(() => ({
   root: { flex: 1 },
-  body: { flex: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
+  body: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
   tight: { letterSpacing: -0.56 },
   center: { textAlign: 'center' },
   hero: {

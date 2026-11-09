@@ -87,7 +87,7 @@ export function Btn({
       ]}
     >
       {icon}
-      <Txt size={size} weight={600} color={primary ? (accent === colors.ink ? colors.white : '#FFFFFF') : colors.ink}>
+      <Txt size={size} weight={600} numberOfLines={1} color={primary ? (accent === colors.ink ? colors.white : '#FFFFFF') : colors.ink}>
         {label}
       </Txt>
     </Pressable>

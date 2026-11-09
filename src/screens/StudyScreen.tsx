@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bar, Btn, Chip, DashedLine, IconButton } from '../components/Bits';
@@ -27,6 +27,9 @@ type Props = {
 
 export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate, autoSpeak, isFavorite, onFavorite, onToggle, onMark, onBack }: Props) {
   const insets = useSafeAreaInsets();
+  // 작은 화면(iPhone SE급)에서는 글자·버튼을 줄이고 아이콘을 뺀다
+  const { width, height } = useWindowDimensions();
+  const compact = height < 700 || width < 360;
   const meta = deckMeta(deck);
   const cards = cardDecks[deck];
   const card = cards.find((c) => c.id === queue[pos]) ?? cards[0];
@@ -44,7 +47,7 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
   }, [card.id, canSpeak]);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 30) }]}>
+    <View style={[styles.root, compact && { gap: 10 }, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, compact ? 16 : 30) }]}>
       <View style={styles.header}>
         <IconButton label="뒤로" onPress={onBack} />
         <View style={{ flex: 1, gap: 2 }}>
@@ -61,7 +64,7 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
       </View>
       <Bar pct={(pos / total) * 100} color={colors.accent} track={colors.border} height={6} />
 
-      <View style={styles.card}>
+      <View style={[styles.card, compact && { padding: 14, gap: 8 }]}>
         <View style={styles.cardTop}>
           <Chip label={card.tag} bg={meta.soft} fg={meta.deep} />
           <Pressable
@@ -74,27 +77,30 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
             <StarIcon size={22} filled={isFavorite(card.id)} color={isFavorite(card.id) ? '#F2A91B' : colors.muted} />
           </Pressable>
         </View>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.tapArea}>
         <View style={styles.front}>
-          <Txt size={meta.bigFront ? 44 : 28} weight={700} lineHeight={1.2} style={{ letterSpacing: meta.bigFront ? -0.88 : -0.56 }}>
+          <Txt size={meta.bigFront ? (compact ? 36 : 44) : compact ? 24 : 28} weight={700} lineHeight={1.2} style={{ letterSpacing: meta.bigFront ? -0.88 : -0.56 }}>
             {card.front}
           </Txt>
-          <Txt size={14} color={colors.muted}>
-            {card.hint}
-          </Txt>
+          {compact && revealed ? null : (
+            <Txt size={14} color={colors.muted}>
+              {card.hint}
+            </Txt>
+          )}
         </View>
         {revealed ? (
-          <View style={{ gap: 12 }}>
+          <View style={{ gap: compact ? 8 : 12 }}>
             <DashedLine />
-            <View style={{ gap: 12, paddingTop: 6 }}>
-              <Txt size={22} weight={600} lineHeight={1.35}>
+            <View style={{ gap: compact ? 8 : 12, paddingTop: compact ? 0 : 6 }}>
+              <Txt size={compact ? 19 : 22} weight={600} lineHeight={1.35}>
                 {card.back}
               </Txt>
               <View style={styles.example}>
-                <Txt size={15} lineHeight={1.45}>
+                <Txt size={compact ? 14 : 15} lineHeight={1.4}>
                   {card.ex}
                 </Txt>
-                <Txt size={13} lineHeight={1.45} color={colors.muted}>
+                <Txt size={compact ? 12 : 13} lineHeight={1.4} color={colors.muted}>
                   {card.exKo}
                 </Txt>
               </View>
@@ -102,6 +108,7 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
           </View>
         ) : null}
         </Pressable>
+        </ScrollView>
         <View style={styles.cardButtons}>
             <Pressable
               accessibilityRole="button"
@@ -112,9 +119,9 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
               onPress={speak}
               style={({ pressed }) => [styles.listen, !canSpeak && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}
             >
-              <SpeakerIcon size={26} color={colors.accent} />
-              <Txt size={17} weight={600} color={colors.accent}>
-                {canSpeak ? '발음 듣기' : '뜻을 보면 들을 수 있어요'}
+              <SpeakerIcon size={compact ? 20 : 24} color={colors.accent} />
+              <Txt size={compact ? 15 : 16} weight={600} color={colors.accent} numberOfLines={1}>
+                {compact ? '듣기' : '발음 듣기'}
               </Txt>
             </Pressable>
           <Pressable
@@ -122,8 +129,8 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
             onPress={onToggle}
             style={({ pressed }) => [styles.listen, styles.reveal, pressed && { opacity: 0.8 }]}
           >
-            <TapIcon />
-            <Txt size={17} weight={600} color={colors.ink}>
+            {compact ? null : <TapIcon />}
+            <Txt size={compact ? 15 : 16} weight={600} color={colors.ink} numberOfLines={1}>
               {revealed ? '뜻 숨기기' : '뜻 보기'}
             </Txt>
           </Pressable>
@@ -131,12 +138,14 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
       </View>
 
       <View style={styles.actions}>
-        <Btn label="다시 볼래요" onPress={() => onMark(false)} icon={<AgainIcon />} style={{ flex: 1 }} />
-        <Btn label="알아요" primary onPress={() => onMark(true)} icon={<CheckIcon />} style={{ flex: 1, borderWidth: 0 }} />
+        <Btn label="다시 볼래요" onPress={() => onMark(false)} icon={compact ? undefined : <AgainIcon />} height={compact ? 50 : 58} size={compact ? 15 : 16} style={{ flex: 1 }} />
+        <Btn label="알아요" primary onPress={() => onMark(true)} icon={compact ? undefined : <CheckIcon />} height={compact ? 50 : 58} size={compact ? 15 : 16} style={{ flex: 1, borderWidth: 0 }} />
       </View>
-      <Txt size={12} color={colors.muted} style={{ textAlign: 'center' }}>
-        다시 볼 카드만 다음 회독에 남아요
-      </Txt>
+      {compact ? null : (
+        <Txt size={12} color={colors.muted} style={{ textAlign: 'center' }}>
+          다시 볼 카드만 다음 회독에 남아요
+        </Txt>
+      )}
     </View>
   );
 }
@@ -165,21 +174,24 @@ const styles = createStyles(() => ({
     justifyContent: 'center',
   },
   listen: {
-    minHeight: 52,
-    width: '100%',
+    flex: 1,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 28,
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 24,
     backgroundColor: colors.accentTint,
   },
-  tapArea: { flex: 1, minHeight: 0, gap: 12 },
+  // 내용이 짧으면 스크롤 없이 카드를 채우고, 길어서 넘칠 때만 스크롤된다
+  scroll: { flex: 1, minHeight: 0 },
+  scrollContent: { flexGrow: 1 },
+  tapArea: { flexGrow: 1, gap: 12 },
   reveal: { backgroundColor: colors.exampleBg },
-  cardButtons: { gap: 8 },
+  cardButtons: { flexDirection: 'row', gap: 8 },
   front: { flex: 1, justifyContent: 'center', gap: 10 },
-  example: { gap: 4, padding: 14, borderRadius: 16, backgroundColor: colors.exampleBg },
+  example: { gap: 4, padding: 12, borderRadius: 14, backgroundColor: colors.exampleBg },
   actions: { flexDirection: 'row', gap: 10 },
 }));

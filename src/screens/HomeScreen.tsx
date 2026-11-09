@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bar } from '../components/Bits';
@@ -55,7 +55,7 @@ export function HomeScreen({ progress, onReview, onOpenDeck, onOpenSet, onNaviga
 
   return (
     <View style={styles.root}>
-      <View style={[styles.scroll, { paddingTop: insets.top + 16 }]}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={{ gap: 4 }}>
             <Txt size={13} weight={500} color={colors.muted}>
@@ -104,7 +104,7 @@ export function HomeScreen({ progress, onReview, onOpenDeck, onOpenSet, onNaviga
         </View>
 
         <ReviewSection progress={progress} onReview={onReview} />
-      </View>
+      </ScrollView>
 
       <BottomNav active="home" onNavigate={onNavigate} />
     </View>
@@ -198,7 +198,8 @@ function ReviewSection({
 
 const styles = createStyles(() => ({
   root: { flex: 1 },
-  scroll: { flex: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 22 },
+  // 화면이 작거나 글자가 크면 스크롤된다 (넉넉하면 스크롤 없이 한 화면)
+  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 20, gap: 22 },
   tight: { letterSpacing: -0.56 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   streak: {

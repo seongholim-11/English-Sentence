@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, Tab } from '../components/BottomNav';
 import { Txt } from '../components/Txt';
 import { FONT_SCALES, GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES, THEMES } from '../progress';
 import { Reminder, applyReminder, reminderSupported, timeLabel } from '../reminder';
+import { PRIVACY_URL } from '../links';
 import { speak } from '../speech';
 import { colors, createStyles } from '../theme';
 
@@ -233,6 +234,15 @@ export function SettingsScreen({
             </Txt>
           </View>
         </View>
+
+        <Pressable accessibilityRole="link" onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})} style={styles.infoRow}>
+          <Txt size={15} weight={600}>
+            개인정보처리방침
+          </Txt>
+          <Txt size={15} color={colors.muted}>
+            보기
+          </Txt>
+        </Pressable>
 
         <Pressable accessibilityRole="button" onPress={() => setNotices((v) => !v)} style={styles.infoRow}>
           <Txt size={15} weight={600}>

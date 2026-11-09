@@ -1,4 +1,3 @@
-import * as Speech from 'expo-speech';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +6,7 @@ import { BottomNav, Tab } from '../components/BottomNav';
 import { Txt } from '../components/Txt';
 import { FONT_SCALES, GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES, THEMES } from '../progress';
 import { Reminder, applyReminder, reminderSupported, timeLabel } from '../reminder';
+import { speak } from '../speech';
 import { colors, createStyles } from '../theme';
 
 const PRESETS = [10, 20, 30, 50, 100];
@@ -27,6 +27,7 @@ export function SettingsScreen({
   const goal = progress.goal;
   const reminder = progress.prefs.reminder;
   const [reminderNote, setReminderNote] = useState('');
+  const [notices, setNotices] = useState(false);
 
   const changeReminder = async (next: Reminder) => {
     setReminderNote('');
@@ -121,8 +122,7 @@ export function SettingsScreen({
                   accessibilityState={{ selected: on }}
                   onPress={() => {
                     onSetPrefs({ speechRate: rate });
-                    Speech.stop();
-                    Speech.speak('How are you doing today?', { language: 'en-US', rate });
+                    speak('How are you doing today?', rate);
                   }}
                   style={[styles.preset, on && { backgroundColor: colors.ink, borderColor: colors.ink }]}
                 >
@@ -233,6 +233,28 @@ export function SettingsScreen({
             </Txt>
           </View>
         </View>
+
+        <Pressable accessibilityRole="button" onPress={() => setNotices((v) => !v)} style={styles.infoRow}>
+          <Txt size={15} weight={600}>
+            출처·라이선스
+          </Txt>
+          <Txt size={15} color={colors.muted}>
+            {notices ? '접기' : '보기'}
+          </Txt>
+        </Pressable>
+        {notices && (
+          <View style={{ gap: 10 }}>
+            <Txt size={13} color={colors.muted} lineHeight={1.6}>
+              영단어 덱은 FrequencyWords(OpenSubtitles 자막 빈도 목록, CC BY-SA 4.0)를 원형 기준으로 묶고 기초 기능어·감탄사·인명·비속어를 뺀 뒤 뜻과 예문을 덧붙여 만들었어요. 같은 조건(CC BY-SA 4.0)으로 공유해요.
+            </Txt>
+            <Txt size={13} color={colors.muted} lineHeight={1.6}>
+              발음기호는 CMU Pronouncing Dictionary(Copyright © 1993-2015 Carnegie Mellon University)의 미국식 발음을 IPA로 변환한 거예요.
+            </Txt>
+            <Txt size={13} color={colors.muted} lineHeight={1.6}>
+              글꼴은 Space Grotesk, IBM Plex Sans KR(SIL Open Font License 1.1)이에요.
+            </Txt>
+          </View>
+        )}
       </ScrollView>
       <BottomNav active="settings" onNavigate={onNavigate} />
     </View>

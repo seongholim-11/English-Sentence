@@ -1,10 +1,10 @@
-import * as Speech from 'expo-speech';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Btn, IconButton } from '../components/Bits';
 import { Txt } from '../components/Txt';
 import { Dialogue, Line } from '../data/dialogues';
+import { speak } from '../speech';
 import { colors, createStyles } from '../theme';
 
 export type HideMode = 'en' | 'ko' | 'none';
@@ -106,8 +106,7 @@ function Bubble({ line, open, hide, rate, onPress }: { line: Line; open: boolean
   // 누른 뒤에 영어가 보이는 상태라면 발음도 들려준다
   const press = () => {
     if (!open || hide !== 'en') {
-      Speech.stop();
-      Speech.speak(line.en, { language: 'en-US', rate });
+      speak(line.en, rate);
     }
     onPress();
   };

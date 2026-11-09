@@ -7,7 +7,12 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.damadu.dasibom",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -16,6 +21,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "package": "com.damadu.dasibom",
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -24,7 +30,8 @@
     },
     "backgroundColor": "#F3F3EF",
     "plugins": [
-      "expo-notifications"
+      "expo-notifications",
+      ["expo-audio", { "microphonePermission": false }]
     ]
   }
 }

@@ -1,4 +1,3 @@
-import * as Speech from 'expo-speech';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +6,7 @@ import { Bar, Btn, Chip, DashedLine, IconButton } from '../components/Bits';
 import { AgainIcon, CheckIcon, SpeakerIcon, StarIcon, TapIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { CardDeckId, cardDecks, deckMeta, speakText } from '../data/decks';
+import { speak as say } from '../speech';
 import { colors, createStyles } from '../theme';
 
 type Props = {
@@ -35,8 +35,7 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
   const canSpeak = deck !== 'sentences' || revealed;
 
   const speak = () => {
-    Speech.stop();
-    Speech.speak(speakText(deck, card), { language: 'en-US', rate });
+    say(speakText(deck, card), rate);
   };
 
   // 자동 재생: 카드가 바뀌면 읽어 준다 (문장은 영어가 보이는 뜻 보기 뒤에)

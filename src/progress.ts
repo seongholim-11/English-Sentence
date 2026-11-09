@@ -233,6 +233,8 @@ export const recentDays = (p: Progress, n: number): { date: string; label: strin
 
 export const todayCount = (p: Progress) => (p.today.date === dateKey() ? p.today.count : 0);
 
+const SAVE_RETRY_MS = 5000;
+
 export type RoundResult = SetRef & {
   round: number;
   total: number;
@@ -243,24 +245,79 @@ export type RoundResult = SetRef & {
 export function useProgress() {
   const [progress, setProgress] = useState<Progress | null>(null);
   const ref = useRef<Progress | null>(null);
+  // 읽기 실패: 저장된 진도를 덮어쓰지 않도록 앱을 열지 않고 다시 시도하게 한다
+  const [loadError, setLoadError] = useState(false);
+  // 쓰기 실패: 화면에 알리고 자동·수동으로 다시 저장한다
+  const [saveError, setSaveError] = useState(false);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveSeq = useRef(0);
+  const mounted = useRef(true);
+
+  const load = useCallback(() => {
+    setLoadError(false);
+    AsyncStorage.getItem(STORAGE_KEY).then(
+      (s) => {
+        const open = (p: Progress) => {
+          ref.current = p;
+          setProgress(p);
+        };
+        let p: Progress;
+        try {
+          p = s ? sanitize(JSON.parse(s)) : initialProgress();
+        } catch {
+          // 저장값이 깨졌으면 원본을 먼저 따로 보관하고, 보관에 성공했을 때만 새로 시작한다
+          AsyncStorage.setItem(`${STORAGE_KEY}.corrupt`, s ?? '').then(
+            () => open(initialProgress()),
+            () => setLoadError(true),
+          );
+          return;
+        }
+        open(p);
+      },
+      () => setLoadError(true),
+    );
+  }, []);
+
+  useEffect(load, [load]);
+
+  const save = useCallback((p: Progress) => {
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+    retryTimer.current = null;
+    // 가장 마지막에 요청한 저장의 결과만 반영한다 (이전 요청의 늦은 성공·실패는 무시)
+    const seq = ++saveSeq.current;
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(p)).then(
+      () => {
+        if (mounted.current && seq === saveSeq.current) setSaveError(false);
+      },
+      () => {
+        if (!mounted.current || seq !== saveSeq.current) return;
+        setSaveError(true);
+        // 잠깐 뒤 가장 최신 진도로 한 번 더 시도한다
+        retryTimer.current = setTimeout(() => ref.current && save(ref.current), SAVE_RETRY_MS);
+      },
+    );
+  }, []);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((s) => (s ? sanitize(JSON.parse(s)) : initialProgress()))
-      .catch(() => initialProgress())
-      .then((p) => {
-        ref.current = p;
-        setProgress(p);
-      });
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+    };
   }, []);
 
-  const update = useCallback((fn: (p: Progress) => Progress) => {
-    if (!ref.current) return;
-    const next = fn(ref.current);
-    ref.current = next;
-    setProgress(next);
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
-  }, []);
+  const update = useCallback(
+    (fn: (p: Progress) => Progress) => {
+      if (!ref.current) return;
+      const next = fn(ref.current);
+      ref.current = next;
+      setProgress(next);
+      save(next);
+    },
+    [save],
+  );
+
+  const retrySave = useCallback(() => ref.current && save(ref.current), [save]);
 
   const setLastDeck = useCallback((deck: DeckId) => update((p) => ({ ...p, lastDeck: deck })), [update]);
 
@@ -358,5 +415,5 @@ export function useProgress() {
 
   const setPrefs = useCallback((prefs: Partial<Prefs>) => update((p) => ({ ...p, prefs: { ...p.prefs, ...prefs } })), [update]);
 
-  return { progress, toggleFavorite, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
+  return { progress, loadError, saveError, retryLoad: load, retrySave, toggleFavorite, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
 }

@@ -1,4 +1,3 @@
-import * as Speech from 'expo-speech';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +8,8 @@ import { Txt } from '../components/Txt';
 import { CardDeckId, cardDecks, deckMeta, speakText } from '../data/decks';
 import { Progress, isFavorite } from '../progress';
 import { Hit, searchCards } from '../search';
-import { colors, createStyles, fontScale } from '../theme';
+import { speak as say } from '../speech';
+import { colors, createStyles, fontScale, fontState } from '../theme';
 
 type Props = {
   progress: Progress;
@@ -43,8 +43,7 @@ export function SearchScreen({ progress, initialFavorites, onToggleFavorite, onB
   }, [onlyFav, query, favHits]);
 
   const speak = (h: Hit) => {
-    Speech.stop();
-    Speech.speak(speakText(h.deck, h.card), { language: 'en-US', rate: progress.prefs.speechRate });
+    say(speakText(h.deck, h.card), progress.prefs.speechRate);
   };
 
   return (
@@ -177,7 +176,7 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  textInput: { flex: 1, minWidth: 0, fontSize: 15 * fontScale.value, color: colors.ink, fontFamily: 'IBMPlexSansKR_500Medium', paddingVertical: 0 },
+  textInput: { flex: 1, minWidth: 0, fontSize: 15 * fontScale.value, color: colors.ink, fontFamily: fontState.fallback ? undefined : 'IBMPlexSansKR_500Medium', paddingVertical: 0 },
   tabs: { flexDirection: 'row', gap: 8 },
   tab: {
     height: 34,

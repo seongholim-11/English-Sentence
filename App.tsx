@@ -11,13 +11,14 @@ import {
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
 import { useFonts } from 'expo-font';
-import * as Speech from 'expo-speech';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { BackHandler, View, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Tab } from './src/components/BottomNav';
+import { stopSpeech } from './src/speech';
+import { LoadErrorScreen, SaveErrorBanner } from './src/components/Notice';
 import { CardDeckId, DeckId, deckMeta } from './src/data/decks';
 import { dialogues } from './src/data/dialogues';
 import { RoundResult, SetRef, dueIds, isFavorite, roundState, useProgress } from './src/progress';
@@ -31,9 +32,10 @@ import { SearchScreen } from './src/screens/SearchScreen';
 import { SetsScreen } from './src/screens/SetsScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
-import { applyTheme, colors, createStyles } from './src/theme';
+import { applyTheme, colors, createStyles, fontState } from './src/theme';
 
 const REVIEW_MAX = 20;
+const FONT_WAIT_MS = 8000;
 
 // 학습·복습 화면이 보여 주는 카드가 속한 덱
 const DECK_OF = (s: Screen): CardDeckId => (s.name === 'study' ? s.set.deck : s.name === 'review' ? s.deck : 'words');
@@ -49,7 +51,7 @@ type Screen =
   | { name: 'done'; result: RoundResult };
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     SpaceGrotesk_400Regular,
     SpaceGrotesk_500Medium,
     SpaceGrotesk_600SemiBold,
@@ -59,7 +61,15 @@ export default function App() {
     IBMPlexSansKR_600SemiBold,
     IBMPlexSansKR_700Bold,
   });
-  const { progress, toggleFavorite, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
+  // 글꼴이 오류로 못 뜨거나 너무 오래 걸리면 기본 글꼴로 시작한다
+  const [fontTimeout, setFontTimeout] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setFontTimeout(true), FONT_WAIT_MS);
+    return () => clearTimeout(t);
+  }, []);
+  fontState.fallback = !fontsLoaded && (!!fontError || fontTimeout);
+
+  const { progress, loadError, saveError, retryLoad, retrySave, toggleFavorite, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
@@ -67,17 +77,17 @@ export default function App() {
   const [shown, setShown] = useState<Record<number, boolean>>({});
 
   const goHome = () => {
-    Speech.stop();
+    stopSpeech();
     setScreen({ name: 'home' });
   };
 
   const goTab = (t: Tab) => {
-    Speech.stop();
+    stopSpeech();
     setScreen({ name: t });
   };
 
   const goSets = (deck: CardDeckId) => {
-    Speech.stop();
+    stopSpeech();
     setScreen({ name: 'sets', deck });
   };
 
@@ -99,7 +109,9 @@ export default function App() {
   const themePref = progress?.prefs.theme ?? 'system';
   applyTheme(themePref === 'system' ? (scheme === 'dark' ? 'dark' : 'light') : themePref, progress?.prefs.fontScale ?? 1);
 
-  if (!fontsLoaded || !progress) return <View style={styles.root} />;
+  if (!fontsLoaded && !fontState.fallback) return <View style={styles.root} />;
+  if (loadError) return <SafeAreaProvider><LoadErrorScreen onRetry={retryLoad} /></SafeAreaProvider>;
+  if (!progress) return <View style={styles.root} />;
 
   const openDeck = (id: DeckId) => {
     setLastDeck(id);
@@ -119,7 +131,7 @@ export default function App() {
   };
 
   const onMark = (s: SetRef, knew: boolean) => {
-    Speech.stop();
+    stopSpeech();
     const result = mark(s, knew);
     setRevealed(false);
     if (result) setScreen({ name: 'done', result });
@@ -140,7 +152,7 @@ export default function App() {
   };
 
   const onReviewMark = (s: { deck: CardDeckId; queue: string[]; pos: number }, knew: boolean) => {
-    Speech.stop();
+    stopSpeech();
     review(s.deck, s.queue[s.pos], knew);
     setRevealed(false);
     if (s.pos + 1 >= s.queue.length) goHome();
@@ -148,7 +160,7 @@ export default function App() {
   };
 
   const onDialogueDone = () => {
-    Speech.stop();
+    stopSpeech();
     const roundFinished = completeDialogue();
     setShown({});
     if (roundFinished) goHome();
@@ -164,7 +176,7 @@ export default function App() {
           progress={progress}
           onOpenDeck={openDeck}
           onSearch={(favorites) => {
-            Speech.stop();
+            stopSpeech();
             setScreen({ name: 'search', favorites });
           }}
           onNavigate={goTab}
@@ -291,6 +303,7 @@ export default function App() {
       <View style={styles.root}>
         <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
         {body}
+        {saveError && <SaveErrorBanner onRetry={retrySave} />}
       </View>
     </SafeAreaProvider>
   );

@@ -67,6 +67,9 @@ export const colors: Palette & { mode: Mode } = { ...light, mode: 'light' };
 // 글자 크기 배율
 export const fontScale = { value: 1 };
 
+// 글꼴을 불러오지 못했을 때 기기 기본 글꼴로 대신 그린다
+export const fontState = { fallback: false };
+
 export function applyTheme(mode: Mode, scale: number) {
   Object.assign(colors, mode === 'dark' ? dark : light, { mode });
   fontScale.value = scale;
@@ -79,7 +82,7 @@ export function createStyles<T extends Record<string, Style>>(factory: () => T):
   const cache: Record<string, T> = {};
   return new Proxy({} as T, {
     get(_, prop) {
-      const s = (cache[`${colors.mode}-${fontScale.value}`] ??= StyleSheet.create(factory()));
+      const s = (cache[`${colors.mode}-${fontScale.value}-${fontState.fallback}`] ??= StyleSheet.create(factory()));
       return s[prop as keyof T];
     },
   });

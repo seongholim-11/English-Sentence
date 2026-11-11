@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ComponentRef, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -35,6 +35,13 @@ export function SettingsScreen({
   const [pendingSize, setPendingSize] = useState<number | null>(null);
   const setSize = progress.prefs.setSize;
   const [notices, setNotices] = useState(false);
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  // 출처는 화면 맨 아래에 펼쳐지므로, 열면 바로 보이도록 끝까지 내린다
+  const wantEnd = useRef(false);
+  const toggleNotices = () => {
+    wantEnd.current = !notices;
+    setNotices(!notices);
+  };
 
   const changeReminder = async (next: Reminder) => {
     setReminderNote('');
@@ -54,6 +61,14 @@ export function SettingsScreen({
   return (
     <View style={styles.root}>
       <ScrollView
+        ref={scroll}
+        onContentSizeChange={() => {
+          // 펼친 내용이 그려져 길이가 정해진 뒤에 끝까지 내린다
+          if (wantEnd.current) {
+            wantEnd.current = false;
+            scroll.current?.scrollToEnd({ animated: true });
+          }
+        }}
         style={{ flex: 1 }}
         contentContainerStyle={[styles.body, { paddingTop: insets.top + 16 }]}
         showsVerticalScrollIndicator={false}
@@ -310,7 +325,7 @@ export function SettingsScreen({
           </Txt>
         </Pressable>
 
-        <Pressable accessibilityRole="button" onPress={() => setNotices((v) => !v)} style={styles.infoRow}>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: notices }} onPress={toggleNotices} style={styles.infoRow}>
           <Txt size={15} weight={600}>
             출처·라이선스
           </Txt>

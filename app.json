@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "다시봄",
+    "name": "링고루프",
     "slug": "english-sentence",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.damadu.dasibom",
+      "bundleIdentifier": "com.damadu.lingoloop",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -21,12 +21,12 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.damadu.dasibom",
+      "package": "com.damadu.lingoloop",
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "name": "다시봄",
+      "name": "링고루프",
       "output": "single"
     },
     "backgroundColor": "#F3F3EF",

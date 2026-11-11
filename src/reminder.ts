@@ -44,7 +44,7 @@ export async function applyReminder(r: Reminder): Promise<boolean> {
     });
   }
   await Notifications.scheduleNotificationAsync({
-    content: { title: '다시봄', body: '오늘 복습할 카드가 기다리고 있어요.' },
+    content: { title: '링고루프', body: '오늘 복습할 카드가 기다리고 있어요.' },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour: r.hour,

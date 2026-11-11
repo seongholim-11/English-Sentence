@@ -222,7 +222,7 @@ export function SettingsScreen({
               앱 이름
             </Txt>
             <Txt size={15} color={colors.muted}>
-              다시봄
+              링고루프
             </Txt>
           </View>
           <View style={styles.infoRow}>

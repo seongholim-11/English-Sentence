@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# 비밀 키 (커밋 금지). 템플릿은 .env.example
+.env
+
+# 음성 샘플(들어 보기용, 커밋 안 함)
+assets/audio-samples/

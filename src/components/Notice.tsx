@@ -38,6 +38,23 @@ export function SaveErrorBanner({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+// 저장된 기록이 깨져서 읽지 못해 새로 시작했을 때 알린다
+export function ResetNoticeBanner({ onClose }: { onClose: () => void }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.banner, { bottom: Math.max(insets.bottom, 12) + 72, backgroundColor: colors.accent }]} accessibilityLiveRegion="polite">
+      <Txt size={13} weight={500} color="#FFFFFF" style={{ flex: 1 }}>
+        저장된 학습 기록을 읽지 못해 새로 시작했어요. 원래 기록은 기기에 따로 보관해 두었어요.
+      </Txt>
+      <Pressable accessibilityRole="button" onPress={onClose} style={[styles.retry, { backgroundColor: '#FFFFFF' }]}>
+        <Txt size={13} weight={700} color={colors.accent}>
+          확인
+        </Txt>
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = createStyles(() => ({
   full: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 28 },
   banner: {

@@ -13,12 +13,12 @@ import {
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { BackHandler, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, BackHandler, View, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Tab } from './src/components/BottomNav';
 import { stopSpeech } from './src/speech';
-import { LoadErrorScreen, SaveErrorBanner } from './src/components/Notice';
+import { LoadErrorScreen, ResetNoticeBanner, SaveErrorBanner } from './src/components/Notice';
 import { CardDeckId, DeckId, applySetSize, deckMeta } from './src/data/decks';
 import { dialogues } from './src/data/dialogues';
 import { RoundResult, SetRef, dueIds, isFavorite, roundState, useProgress } from './src/progress';
@@ -71,7 +71,7 @@ export default function App() {
   }, []);
   fontState.fallback = !fontsLoaded && (!!fontError || fontTimeout);
 
-  const { progress, loadError, saveError, retryLoad, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
+  const { progress, loadError, saveError, resetNotice, dismissResetNotice, retryLoad, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
@@ -118,9 +118,9 @@ export default function App() {
   applySetSize(progress?.prefs.setSize);
   applyTheme(themePref === 'system' ? (scheme === 'dark' ? 'dark' : 'light') : themePref, progress?.prefs.fontScale ?? 1);
 
-  if (!fontsLoaded && !fontState.fallback) return <View style={styles.root} />;
+  if (!fontsLoaded && !fontState.fallback) return <Loading />;
   if (loadError) return <SafeAreaProvider><LoadErrorScreen onRetry={retryLoad} /></SafeAreaProvider>;
-  if (!progress) return <View style={styles.root} />;
+  if (!progress) return <Loading />;
 
   const openDeck = (id: DeckId) => {
     setLastDeck(id);
@@ -324,8 +324,18 @@ export default function App() {
         <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
         {body}
         {saveError && <SaveErrorBanner onRetry={retrySave} />}
+        {resetNotice && !saveError && <ResetNoticeBanner onClose={dismissResetNotice} />}
       </View>
     </SafeAreaProvider>
+  );
+}
+
+// 글꼴·학습 기록을 불러오는 동안 빈 화면 대신 보여 준다
+function Loading() {
+  return (
+    <View style={[styles.root, { alignItems: 'center', justifyContent: 'center' }]}>
+      <ActivityIndicator color={colors.muted} accessibilityLabel="불러오는 중" />
+    </View>
   );
 }
 

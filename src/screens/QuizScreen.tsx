@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bar, Btn, Chip, IconButton } from '../components/Bits';
+import { CheckIcon, CloseIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
 import { CardDeckId, deckMeta } from '../data/decks';
 import { makeQuiz } from '../quiz';
@@ -39,6 +40,8 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
     if (picked !== null) return;
     setPicked(i);
     const ok = i === q.answer;
+    // 색을 못 보는 사용자와 스크린리더에도 결과를 알린다
+    AccessibilityInfo.announceForAccessibility(ok ? '정답이에요' : `오답이에요. 정답은 ${q.choices[q.answer]}`);
     if (!ok) setWrong((w) => w.concat([q.card.front]));
     onAnswer(q.card.id, ok);
   };
@@ -134,7 +137,7 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
         </ScrollView>
       </View>
 
-      <View style={{ gap: compact ? 6 : 10 }}>
+      <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ gap: compact ? 6 : 10 }} showsVerticalScrollIndicator={false}>
         {q.choices.map((c, i) => {
           const isAnswer = i === q.answer;
           const state = picked === null ? null : isAnswer ? 'good' : i === picked ? 'bad' : null;
@@ -142,6 +145,8 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
             <Pressable
               key={`${idx}-${i}`}
               accessibilityRole="button"
+              accessibilityLabel={state === 'good' ? `${c}, 정답` : state === 'bad' ? `${c}, 내가 고른 오답` : c}
+              accessibilityState={{ selected: picked === i, disabled: picked !== null }}
               onPress={() => choose(i)}
               style={({ pressed }) => [
                 styles.choice,
@@ -155,10 +160,26 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
               <Txt size={compact ? 14 : 15} weight={500} lineHeight={1.3} style={{ flex: 1 }}>
                 {c}
               </Txt>
+              {state === 'good' && (
+                <View style={styles.mark}>
+                  <CheckIcon size={16} color={colors.good} />
+                  <Txt size={12} weight={700} color={colors.good}>
+                    정답
+                  </Txt>
+                </View>
+              )}
+              {state === 'bad' && (
+                <View style={styles.mark}>
+                  <CloseIcon size={16} color={colors.bad} />
+                  <Txt size={12} weight={700} color={colors.bad}>
+                    오답
+                  </Txt>
+                </View>
+              )}
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <View style={{ height: compact ? 46 : 56 }}>
         {picked !== null && (
@@ -182,7 +203,7 @@ const styles = createStyles(() => ({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   card: {
     flex: 1,
-    minHeight: 0,
+    minHeight: 110,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
@@ -202,6 +223,7 @@ const styles = createStyles(() => ({
     borderColor: colors.border,
     borderRadius: 16,
   },
+  mark: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 8 },
   wrongRow: {
     padding: 14,
     borderRadius: 14,

@@ -6,6 +6,7 @@ import { BottomNav, Tab } from '../components/BottomNav';
 import { Txt } from '../components/Txt';
 import { FONT_SCALES, GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES, THEMES } from '../progress';
 import { SET_SIZES } from '../data/decks';
+import { CC_BY_SA_URL, CMUDICT_LICENSE, CMUDICT_URL, FREQUENCY_WORDS_URL, OFL_URL } from '../data/licenses';
 import { Reminder, applyReminder, reminderSupported, timeLabel } from '../reminder';
 import { PRIVACY_URL } from '../links';
 import { speak } from '../speech';
@@ -31,27 +32,46 @@ export function SettingsScreen({
   const goal = progress.goal;
   const reminder = progress.prefs.reminder;
   const [reminderNote, setReminderNote] = useState('');
+  // 알림을 바꾸는 동안에는 다시 누르지 못하게 한다
+  const [reminderBusy, setReminderBusy] = useState(false);
+  const [linkNote, setLinkNote] = useState('');
   // 세트 크기는 진행 위치가 초기화되므로 한 번 더 확인한다
   const [pendingSize, setPendingSize] = useState<number | null>(null);
   const setSize = progress.prefs.setSize;
   const [notices, setNotices] = useState(false);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
-  // 출처는 화면 맨 아래에 펼쳐지므로, 열면 바로 보이도록 끝까지 내린다
-  const wantEnd = useRef(false);
+  // 출처는 화면 맨 아래에 펼쳐지므로, 열면 "출처·라이선스" 줄이 위로 오도록 내려서 내용이 바로 보이게 한다
+  const wantScroll = useRef(false);
+  const noticesY = useRef(0);
   const toggleNotices = () => {
-    wantEnd.current = !notices;
+    wantScroll.current = !notices;
     setNotices(!notices);
   };
 
+  const openLink = (url: string) => {
+    setLinkNote('');
+    Linking.openURL(url).catch(() => setLinkNote('링크를 열지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'));
+  };
+
   const changeReminder = async (next: Reminder) => {
+    if (reminderBusy) return;
+    setReminderBusy(true);
     setReminderNote('');
-    const ok = await applyReminder(next).catch(() => false);
-    if (next.on && !ok) {
-      onSetPrefs({ reminder: { ...next, on: false } });
-      setReminderNote(reminderSupported ? '알림 권한이 꺼져 있어요. 기기 설정에서 허용해 주세요.' : '알림은 모바일 앱에서만 쓸 수 있어요.');
+    const result = await applyReminder(next);
+    setReminderBusy(false);
+    if (!next.on) {
+      onSetPrefs({ reminder: next });
       return;
     }
-    onSetPrefs({ reminder: next });
+    if (result === 'ok') {
+      onSetPrefs({ reminder: next });
+    } else if (result === 'error') {
+      // 예약에 실패하면 기존 알림은 그대로 두고 설정도 바꾸지 않는다
+      setReminderNote('알림을 예약하지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+    } else {
+      onSetPrefs({ reminder: { ...next, on: false } });
+      setReminderNote(result === 'denied' ? '알림 권한이 꺼져 있어요. 기기 설정에서 허용해 주세요.' : '알림은 모바일 앱에서만 쓸 수 있어요.');
+    }
   };
   const shift = (min: number) => {
     const total = (reminder.hour * 60 + reminder.minute + min + 1440) % 1440;
@@ -63,10 +83,10 @@ export function SettingsScreen({
       <ScrollView
         ref={scroll}
         onContentSizeChange={() => {
-          // 펼친 내용이 그려져 길이가 정해진 뒤에 끝까지 내린다
-          if (wantEnd.current) {
-            wantEnd.current = false;
-            scroll.current?.scrollToEnd({ animated: true });
+          // 펼친 내용이 그려져 길이가 정해진 뒤에 내린다
+          if (wantScroll.current) {
+            wantScroll.current = false;
+            scroll.current?.scrollTo({ y: Math.max(0, noticesY.current - 16), animated: true });
           }
         }}
         style={{ flex: 1 }}
@@ -246,6 +266,7 @@ export function SettingsScreen({
             </View>
             <Switch
               accessibilityLabel="복습 알림"
+              disabled={reminderBusy}
               value={reminder.on}
               onValueChange={(v) => changeReminder({ ...reminder, on: v })}
               trackColor={{ true: colors.accent, false: colors.borderStrong }}
@@ -254,11 +275,11 @@ export function SettingsScreen({
           </View>
           {reminder.on && (
             <View style={styles.stepper}>
-              <Stepper label="30분 일찍" sign="−" disabled={false} onPress={() => shift(-30)} />
+              <Stepper label="30분 일찍" sign="−" disabled={reminderBusy} onPress={() => shift(-30)} />
               <Txt size={26} weight={700} style={styles.tight} tabular>
                 {timeLabel(reminder)}
               </Txt>
-              <Stepper label="30분 늦게" sign="+" disabled={false} onPress={() => shift(30)} />
+              <Stepper label="30분 늦게" sign="+" disabled={reminderBusy} onPress={() => shift(30)} />
             </View>
           )}
           {reminderNote !== '' && (
@@ -316,7 +337,7 @@ export function SettingsScreen({
           </View>
         </View>
 
-        <Pressable accessibilityRole="link" onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})} style={styles.infoRow}>
+        <Pressable accessibilityRole="link" onPress={() => openLink(PRIVACY_URL)} style={styles.infoRow}>
           <Txt size={15} weight={600}>
             개인정보처리방침
           </Txt>
@@ -325,7 +346,19 @@ export function SettingsScreen({
           </Txt>
         </Pressable>
 
-        <Pressable accessibilityRole="button" accessibilityState={{ expanded: notices }} onPress={toggleNotices} style={styles.infoRow}>
+        {linkNote !== '' && (
+          <Txt size={13} color={colors.bad}>
+            {linkNote}
+          </Txt>
+        )}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: notices }}
+          onLayout={(e) => (noticesY.current = e.nativeEvent.layout.y)}
+          onPress={toggleNotices}
+          style={styles.infoRow}
+        >
           <Txt size={15} weight={600}>
             출처·라이선스
           </Txt>
@@ -338,12 +371,21 @@ export function SettingsScreen({
             <Txt size={13} color={colors.muted} lineHeight={1.6}>
               영단어 덱은 FrequencyWords(OpenSubtitles 자막 빈도 목록, CC BY-SA 4.0)를 원형 기준으로 묶고 기초 기능어·감탄사·인명·비속어를 뺀 뒤 뜻과 예문을 덧붙여 만들었어요. 같은 조건(CC BY-SA 4.0)으로 공유해요.
             </Txt>
+            <LinkRow label="FrequencyWords 저장소" onPress={() => openLink(FREQUENCY_WORDS_URL)} />
+            <LinkRow label="CC BY-SA 4.0 라이선스 전문" onPress={() => openLink(CC_BY_SA_URL)} />
             <Txt size={13} color={colors.muted} lineHeight={1.6}>
-              발음기호는 CMU Pronouncing Dictionary(Copyright © 1993-2015 Carnegie Mellon University)의 미국식 발음을 IPA로 변환한 거예요.
+              발음기호는 CMU Pronouncing Dictionary의 미국식 발음을 IPA로 변환한 거예요. 아래는 그 라이선스 전문이에요.
             </Txt>
+            <LinkRow label="CMU Pronouncing Dictionary 저장소" onPress={() => openLink(CMUDICT_URL)} />
+            <View style={styles.licenseBox}>
+              <Txt size={11} color={colors.muted} lineHeight={1.5}>
+                {CMUDICT_LICENSE}
+              </Txt>
+            </View>
             <Txt size={13} color={colors.muted} lineHeight={1.6}>
               글꼴은 Space Grotesk, IBM Plex Sans KR(SIL Open Font License 1.1)이에요.
             </Txt>
+            <LinkRow label="SIL Open Font License 1.1 전문" onPress={() => openLink(OFL_URL)} />
             <Txt size={13} color={colors.muted} lineHeight={1.6}>
               영어 발음은 Google Cloud Text-to-Speech로 만든 합성 음성이에요. 앱에 포함되어 있어서 인터넷 없이도 들을 수 있어요.
             </Txt>
@@ -364,6 +406,16 @@ function Choice({ label, on, onPress }: { label: string; on: boolean; onPress: (
       style={[styles.preset, on && { backgroundColor: colors.ink, borderColor: colors.ink }]}
     >
       <Txt size={13} weight={600} color={on ? colors.white : colors.ink} numberOfLines={1}>
+        {label}
+      </Txt>
+    </Pressable>
+  );
+}
+
+function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="link" onPress={onPress} style={styles.linkRow}>
+      <Txt size={14} weight={600} color={colors.accent}>
         {label}
       </Txt>
     </Pressable>
@@ -411,6 +463,8 @@ const styles = createStyles(() => ({
   },
   presets: { flexDirection: 'row', gap: 8 },
   sample: { gap: 4, padding: 14, borderRadius: 14, backgroundColor: colors.exampleBg },
+  linkRow: { minHeight: 44, justifyContent: 'center' },
+  licenseBox: { padding: 12, borderRadius: 12, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   preset: {
     flex: 1,
     height: 40,

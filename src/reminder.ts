@@ -27,30 +27,42 @@ export const timeLabel = (r: Pick<Reminder, 'hour' | 'minute'>) => {
   return `${r.hour < 12 ? '오전' : '오후'} ${h12}:${String(r.minute).padStart(2, '0')}`;
 };
 
-// 매일 같은 시각에 알림을 예약한다. 권한이 없으면 false
-export async function applyReminder(r: Reminder): Promise<boolean> {
-  if (!reminderSupported) return false;
-  await Notifications.cancelAllScheduledNotificationsAsync();
-  if (!r.on) return true;
+export type ReminderResult = 'ok' | 'denied' | 'unsupported' | 'error';
 
-  const current = await Notifications.getPermissionsAsync();
-  const granted = current.granted || (await Notifications.requestPermissionsAsync()).granted;
-  if (!granted) return false;
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync(CHANNEL, {
-      name: '복습 알림',
-      importance: Notifications.AndroidImportance.DEFAULT,
+// 매일 같은 시각에 알림을 예약한다. 새 예약이 성공한 뒤에만 이전 예약을 지워서,
+// 실패해도 기존 알림은 그대로 남는다
+export async function applyReminder(r: Reminder): Promise<ReminderResult> {
+  if (!reminderSupported) return 'unsupported';
+  try {
+    if (!r.on) {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      return 'ok';
+    }
+    const current = await Notifications.getPermissionsAsync();
+    const granted = current.granted || (await Notifications.requestPermissionsAsync()).granted;
+    if (!granted) {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      return 'denied';
+    }
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync(CHANNEL, {
+        name: '복습 알림',
+        importance: Notifications.AndroidImportance.DEFAULT,
+      });
+    }
+    const id = await Notifications.scheduleNotificationAsync({
+      content: { title: '링고루프', body: '오늘 복습할 카드가 기다리고 있어요.' },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour: r.hour,
+        minute: r.minute,
+        channelId: CHANNEL,
+      },
     });
+    const all = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(all.filter((n) => n.identifier !== id).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)));
+    return 'ok';
+  } catch {
+    return 'error';
   }
-  await Notifications.scheduleNotificationAsync({
-    content: { title: '링고루프', body: '오늘 복습할 카드가 기다리고 있어요.' },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: r.hour,
-      minute: r.minute,
-      channelId: CHANNEL,
-    },
-  });
-  return true;
 }

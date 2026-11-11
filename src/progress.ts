@@ -160,57 +160,116 @@ const initialProgress = (): Progress => ({
   lastStudyDate: null,
 });
 
-// 저장된 데이터에 지금 콘텐츠에 없는 카드·세트가 있으면 걸러 낸다.
-// 세트로 나누기 전의 덱별 회독 상태(decks)는 버리고, 외운 카드와 연속 기록은 그대로 둔다.
-const sanitize = (raw: Partial<Progress>): Progress => {
-  const base = initialProgress();
+// 저장된 값을 필드마다 검사해서 쓸 수 있는 것만 남기고, 깨진 필드는 기본값으로 되돌린다.
+// 지금 콘텐츠에 없는 카드·세트도 걸러 낸다. 외운 카드와 연속 기록은 가능한 한 그대로 둔다.
+const isObj = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
+const isInt = (x: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): x is number =>
+  typeof x === 'number' && Number.isInteger(x) && x >= min && x <= max;
+const strList = (x: unknown): string[] => (Array.isArray(x) ? x.filter((v): v is string => typeof v === 'string') : []);
+const uniq = <T,>(a: T[]): T[] => Array.from(new Set(a));
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const isDeck = (d: unknown): d is CardDeckId => typeof d === 'string' && CARD_DECKS.includes(d as CardDeckId);
+
+export const sanitize = (rawIn: unknown): Progress => {
+  const raw: Record<string, unknown> = isObj(rawIn) ? rawIn : {};
+  const rawPrefs: Record<string, unknown> = isObj(raw.prefs) ? raw.prefs : {};
   // 세트 번호는 세트 크기에 따라 달라지므로, 세트를 걸러 내기 전에 저장된 크기부터 적용한다
-  applySetSize(raw.prefs?.setSize);
-  const p: Progress = { ...base, ...raw, sets: {}, mastered: { ...base.mastered } } as Progress;
+  applySetSize(rawPrefs.setSize);
+  const p = initialProgress();
   const cardIds = Object.fromEntries(CARD_DECKS.map((d) => [d, new Set(cardDecks[d].map((c) => c.id))])) as Record<CardDeckId, Set<string>>;
-  for (const deck of CARD_DECKS) p.mastered[deck] = (raw.mastered?.[deck] ?? []).filter((id) => cardIds[deck].has(id));
-  for (const [key, r] of Object.entries(raw.sets ?? {})) {
-    const [deck, n] = key.split(':');
-    const set = Number(n);
-    if (!CARD_DECKS.includes(deck as CardDeckId) || !(set < setCount(deck as CardDeckId))) continue;
-    const ref = { deck: deck as CardDeckId, set };
-    const ids = new Set(setIds(ref));
-    const queue = r.queue.filter((id) => ids.has(id));
-    const again = r.again.filter((id) => ids.has(id));
-    p.sets[key] =
-      queue.length === 0 ? freshRound(ref, r.round) : { ...r, queue, again, pos: Math.min(r.pos, queue.length - 1) };
+
+  const rawMastered: Record<string, unknown> = isObj(raw.mastered) ? raw.mastered : {};
+  for (const deck of CARD_DECKS) p.mastered[deck] = uniq(strList(rawMastered[deck]).filter((id) => cardIds[deck].has(id)));
+
+  if (isObj(raw.sets)) {
+    for (const [key, r] of Object.entries(raw.sets)) {
+      const [deck, n] = key.split(':');
+      const set = Number(n);
+      if (!isDeck(deck) || !Number.isInteger(set) || set < 0 || set >= setCount(deck) || !isObj(r)) continue;
+      const ref = { deck, set };
+      const ids = new Set(setIds(ref));
+      const round = isInt(r.round, 1) ? r.round : 1;
+      const queue = strList(r.queue).filter((id) => ids.has(id));
+      if (queue.length === 0) {
+        p.sets[key] = freshRound(ref, round);
+        continue;
+      }
+      p.sets[key] = {
+        round,
+        queue,
+        pos: Math.min(isInt(r.pos) ? r.pos : 0, queue.length - 1),
+        known: Math.min(isInt(r.known) ? r.known : 0, queue.length),
+        again: strList(r.again).filter((id) => ids.has(id)),
+      };
+    }
   }
-  p.cards = {};
-  for (const [key, c] of Object.entries(raw.cards ?? {})) {
-    const i = key.indexOf(':');
-    const deck = key.slice(0, i) as CardDeckId;
-    if (CARD_DECKS.includes(deck) && cardIds[deck].has(key.slice(i + 1))) p.cards[key] = c;
+
+  if (isObj(raw.cards)) {
+    for (const [key, c] of Object.entries(raw.cards)) {
+      const i = key.indexOf(':');
+      const deck = key.slice(0, i);
+      if (!isDeck(deck) || !cardIds[deck].has(key.slice(i + 1)) || !isObj(c)) continue;
+      p.cards[key] = {
+        box: isInt(c.box, 0, INTERVALS.length - 1) ? c.box : 0,
+        due: typeof c.due === 'string' && DATE_RE.test(c.due) ? c.due : dateKey(),
+      };
+    }
   }
-  p.quiz = {};
-  for (const [key, q] of Object.entries(raw.quiz ?? {})) {
-    const [deck, n] = key.split(':');
-    if (CARD_DECKS.includes(deck as CardDeckId) && Number(n) < setCount(deck as CardDeckId)) p.quiz[key] = q;
+
+  if (isObj(raw.quiz)) {
+    for (const [key, q] of Object.entries(raw.quiz)) {
+      const [deck, n] = key.split(':');
+      if (!isDeck(deck) || !Number.isInteger(Number(n)) || !(Number(n) < setCount(deck)) || !isObj(q)) continue;
+      if (isInt(q.best) && isInt(q.total, 1) && q.best <= q.total) p.quiz[key] = { best: q.best, total: q.total };
+    }
   }
-  if (p.lastSet && !p.sets[setKey(p.lastSet)]) p.lastSet = null;
-  if (p.lastDeck !== 'dialogue' && !CARD_DECKS.includes(p.lastDeck)) p.lastDeck = 'phrasal';
-  p.dialogue = { ...base.dialogue, ...raw.dialogue };
-  p.dialogue.pos = Math.max(0, Math.min(p.dialogue.pos, dialogues.length - 1));
+
+  const ls = isObj(raw.lastSet) ? raw.lastSet : null;
+  if (ls && isDeck(ls.deck) && isInt(ls.set) && p.sets[setKey({ deck: ls.deck, set: ls.set })]) p.lastSet = { deck: ls.deck, set: ls.set };
+  p.lastDeck = raw.lastDeck === 'dialogue' || isDeck(raw.lastDeck) ? (raw.lastDeck as DeckId) : 'phrasal';
+
+  const rd: Record<string, unknown> = isObj(raw.dialogue) ? raw.dialogue : {};
+  const pos = isInt(rd.pos) ? Math.min(rd.pos, dialogues.length - 1) : 0;
   // 예전 저장본에는 done이 없다: 순서대로 pos 앞까지 외운 것으로 본다
-  const rawDone: unknown = (raw.dialogue as { done?: unknown } | undefined)?.done;
-  const doneList = Array.isArray(rawDone) ? rawDone : Array.from({ length: p.dialogue.pos }, (_, i) => i);
-  p.dialogue.done = Array.from(new Set(doneList.filter((n): n is number => Number.isInteger(n) && n >= 0 && n < dialogues.length)));
-  if (p.today.date !== dateKey()) p.today = { date: dateKey(), count: 0 };
-  p.history = { ...(raw.history ?? {}) };
+  const doneList: unknown[] = Array.isArray(rd.done) ? rd.done : Array.from({ length: pos }, (_, i) => i);
+  p.dialogue = {
+    round: isInt(rd.round, 1) ? rd.round : 1,
+    pos,
+    done: uniq(doneList.filter((n): n is number => isInt(n, 0, dialogues.length - 1))),
+  };
+
+  const rt: Record<string, unknown> = isObj(raw.today) ? raw.today : {};
+  const today = dateKey();
+  p.today = rt.date === today && isInt(rt.count) ? { date: today, count: rt.count } : { date: today, count: 0 };
+  if (isObj(raw.history)) {
+    for (const [d, n] of Object.entries(raw.history)) if (DATE_RE.test(d) && isInt(n)) p.history[d] = n;
+  }
   // 기록 화면이 생기기 전에 공부한 오늘 분량도 반영한다
-  if (raw.today?.date === p.today.date) p.history[p.today.date] = Math.max(p.history[p.today.date] ?? 0, p.today.count);
-  p.goal = clampGoal(raw.goal ?? DAILY_GOAL);
-  p.prefs = { ...defaultPrefs(), ...raw.prefs };
-  p.prefs.setSize = validSetSize(p.prefs.setSize);
-  p.prefs.reminder = { ...defaultReminder(), ...raw.prefs?.reminder };
-  p.favorites = (raw.favorites ?? []).filter((k) => {
+  if (p.today.count > 0) p.history[today] = Math.max(p.history[today] ?? 0, p.today.count);
+
+  p.goal = clampGoal(isInt(raw.goal) ? raw.goal : DAILY_GOAL);
+  const rr: Record<string, unknown> = isObj(rawPrefs.reminder) ? rawPrefs.reminder : {};
+  const dr = defaultReminder();
+  p.prefs = {
+    speechRate: SPEECH_RATES.some((x) => x.rate === rawPrefs.speechRate) ? (rawPrefs.speechRate as number) : 0.9,
+    autoSpeak: rawPrefs.autoSpeak === true,
+    reminder: {
+      on: rr.on === true,
+      hour: isInt(rr.hour, 0, 23) ? rr.hour : dr.hour,
+      minute: isInt(rr.minute, 0, 59) ? rr.minute : dr.minute,
+    },
+    theme: THEMES.some((x) => x.theme === rawPrefs.theme) ? (rawPrefs.theme as Prefs['theme']) : 'system',
+    fontScale: FONT_SCALES.some((x) => x.scale === rawPrefs.fontScale) ? (rawPrefs.fontScale as number) : 1,
+    setSize: validSetSize(rawPrefs.setSize),
+  };
+
+  p.favorites = uniq(strList(raw.favorites)).filter((k) => {
     const i = k.indexOf(':');
-    return CARD_DECKS.includes(k.slice(0, i) as CardDeckId) && cardIds[k.slice(0, i) as CardDeckId].has(k.slice(i + 1));
+    const deck = k.slice(0, i);
+    return isDeck(deck) && cardIds[deck].has(k.slice(i + 1));
   });
+  p.streak = isInt(raw.streak) ? raw.streak : 0;
+  p.lastStudyDate = typeof raw.lastStudyDate === 'string' && DATE_RE.test(raw.lastStudyDate) ? raw.lastStudyDate : null;
   return p;
 };
 
@@ -263,6 +322,9 @@ export function useProgress() {
   const saveSeq = useRef(0);
   const mounted = useRef(true);
 
+  // 저장된 기록이 심하게 깨져서 새로 시작했을 때 true (원본은 따로 보관해 둔다)
+  const [resetNotice, setResetNotice] = useState(false);
+
   const load = useCallback(() => {
     setLoadError(false);
     AsyncStorage.getItem(STORAGE_KEY).then(
@@ -277,7 +339,10 @@ export function useProgress() {
         } catch {
           // 저장값이 깨졌으면 원본을 먼저 따로 보관하고, 보관에 성공했을 때만 새로 시작한다
           AsyncStorage.setItem(`${STORAGE_KEY}.corrupt`, s ?? '').then(
-            () => open(initialProgress()),
+            () => {
+              open(initialProgress());
+              setResetNotice(true);
+            },
             () => setLoadError(true),
           );
           return;
@@ -326,6 +391,8 @@ export function useProgress() {
     },
     [save],
   );
+
+  const dismissResetNotice = useCallback(() => setResetNotice(false), []);
 
   const retrySave = useCallback(() => ref.current && save(ref.current), [save]);
 
@@ -444,5 +511,5 @@ export function useProgress() {
 
   const setPrefs = useCallback((prefs: Partial<Prefs>) => update((p) => ({ ...p, prefs: { ...p.prefs, ...prefs } })), [update]);
 
-  return { progress, loadError, saveError, retryLoad: load, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
+  return { progress, loadError, saveError, resetNotice, dismissResetNotice, retryLoad: load, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
 }

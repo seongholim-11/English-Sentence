@@ -33,12 +33,18 @@ const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const BLANK = '_____';
 
-// 오답 보기: 같은 덱에서 뽑되, 정답과 겹치지 않게
-const pick = (pool: Card[], n: number, ok: (c: Card) => boolean): Card[] => {
+// 오답 보기: 같은 덱에서 뽑되, 정답이나 다른 보기와 같은 문구가 겹치지 않게 (뜻이 같은 카드가 있다)
+// text: 보기로 보이는 문구, taken: 이미 쓴 문구
+const pick = (pool: Card[], n: number, ok: (c: Card) => boolean, text: (c: Card) => string = (c) => c.back, taken: string[] = []): Card[] => {
   const out: Card[] = [];
+  const seen = new Set(taken);
   for (let tries = 0; out.length < n && tries < 400; tries++) {
     const c = pool[rand(pool.length)];
-    if (ok(c) && !out.includes(c)) out.push(c);
+    const t = text(c);
+    if (ok(c) && !seen.has(t)) {
+      out.push(c);
+      seen.add(t);
+    }
   }
   return out;
 };
@@ -51,8 +57,10 @@ const finish = (card: Card, kind: Question['kind'], prompt: string, hint: string
 const meaningQuestion = (deck: CardDeckId, card: Card): Question => {
   const pool = cardDecks[deck];
   const sameTag = (c: Card) => c.tag === card.tag && c.back !== card.back;
-  let wrong = pick(pool, 3, sameTag);
-  if (wrong.length < 3) wrong = wrong.concat(pick(pool, 3 - wrong.length, (c) => c.back !== card.back && !wrong.includes(c)));
+  let wrong = pick(pool, 3, sameTag, (c) => c.back, [card.back]);
+  if (wrong.length < 3) {
+    wrong = wrong.concat(pick(pool, 3 - wrong.length, (c) => c.back !== card.back, (c) => c.back, [card.back, ...wrong.map((c) => c.back)]));
+  }
   return finish(card, 'meaning', card.front, '알맞은 뜻을 고르세요', card.back, wrong.map((c) => c.back));
 };
 
@@ -62,7 +70,7 @@ const blankFromExample = (deck: CardDeckId, card: Card): Question | null => {
   if (!m) return null;
   const sentence = card.ex.replace(m[0], `${m[1]}${BLANK}`);
   const shape = (c: Card) => c.tag === card.tag && c.front !== card.front && c.front.split(' ').length === card.front.split(' ').length;
-  const wrong = pick(cardDecks[deck], 3, shape).map((c) => c.front);
+  const wrong = pick(cardDecks[deck], 3, shape, (c) => c.front, [card.front]).map((c) => c.front);
   if (wrong.length < 3) return null;
   return finish(card, 'blank', sentence, `${card.exKo} — 빈칸에 알맞은 말은?`, card.front, wrong);
 };
@@ -111,6 +119,6 @@ export function makeQuiz(deck: CardDeckId, set: number, n = QUIZ_LENGTH): Questi
 
 // 비울 단어를 못 찾은 문장: 한국어를 보고 영어 문장 고르기
 const meaningFallback = (deck: CardDeckId, card: Card): Question => {
-  const wrong = pick(cardDecks[deck], 3, (c) => c.back !== card.back);
+  const wrong = pick(cardDecks[deck], 3, (c) => c.back !== card.back, (c) => c.back, [card.back]);
   return finish(card, 'meaning', card.front, '알맞은 영어 문장을 고르세요', card.back, wrong.map((c) => c.back));
 };

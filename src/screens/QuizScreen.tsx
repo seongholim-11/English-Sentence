@@ -181,13 +181,13 @@ export function QuizScreen({ deck, set, onAnswer, onFinish, onBack }: Props) {
         })}
       </ScrollView>
 
-      <View style={{ height: compact ? 46 : 56 }}>
+      <View style={{ height: compact ? 38 : 42 }}>
         {picked !== null && (
           <Btn
             label={idx + 1 >= total ? '결과 보기' : '다음 문제'}
             primary
             accent={picked === q.answer ? colors.good : colors.bad}
-            height={compact ? 46 : 56}
+            height={compact ? 38 : 42}
             size={15}
             onPress={next}
             style={{ borderWidth: 0 }}
@@ -213,7 +213,7 @@ const styles = createStyles(() => ({
   // 내용이 짧으면 가운데에 놓이고, 길어서 넘칠 때만 스크롤된다
   cardContent: { flexGrow: 1, justifyContent: 'center', gap: 12 },
   choice: {
-    minHeight: 54,
+    minHeight: 42,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,

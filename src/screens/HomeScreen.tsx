@@ -85,7 +85,7 @@ export function HomeScreen({ progress, onReview, onOpenDeck, onOpenSet, onNaviga
             <Txt size={14} color={colors.muted} lineHeight={1.55}>
               {'① 영단어 1세트를 열어요.\n② 카드를 탭해서 뜻과 예문을 보고, 아는 카드는 "알아요", 헷갈리면 "다시 볼래요"를 눌러요.\n③ 한 바퀴가 끝나면 모르는 카드만 다음 회독에 다시 나와요.\n④ 잊을 때쯤 홈의 "오늘의 복습"에 카드가 다시 나와요.'}
             </Txt>
-            <Btn label="영단어 1세트 시작하기" primary accent={colors.accent} height={50} size={15} onPress={() => onOpenSet({ deck: 'words', set: 0 })} style={{ borderWidth: 0 }} />
+            <Btn label="영단어 1세트 시작하기" primary accent={colors.accent} height={38} size={15} onPress={() => onOpenSet({ deck: 'words', set: 0 })} style={{ borderWidth: 0 }} />
           </View>
         )}
 
@@ -130,7 +130,7 @@ export function HomeScreen({ progress, onReview, onOpenDeck, onOpenSet, onNaviga
 
 const CARD_GAP = 12;
 const CARD_MAX_H = 150;
-const CARD_MIN_H = 92;
+const CARD_MIN_H = 120;
 
 // 복습 카드: 영단어·구동사·문장은 오늘 복습할 장수, 대화문은 다음 편
 const reviewOf = (p: Progress, d: DeckMeta): { big: string; unit: string; note: string; active: boolean } => {
@@ -234,7 +234,7 @@ const styles = createStyles(() => ({
   hero: { backgroundColor: colors.heroBg, borderRadius: 24, padding: 20, gap: 16 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   heroBtn: {
-    height: 52,
+    height: 40,
     borderRadius: 14,
     backgroundColor: colors.accent,
     flexDirection: 'row',

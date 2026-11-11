@@ -60,7 +60,7 @@ export function Btn({
   onPress,
   primary,
   accent = colors.accent,
-  height = 58,
+  height = 44,
   size = 16,
   icon,
   style,

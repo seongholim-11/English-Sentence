@@ -155,6 +155,7 @@ export function DialogueScreen(props: Props) {
                   accessibilityRole="button"
                   accessibilityLabel={`${e} 설명 보기`}
                   accessibilityState={{ expanded: on }}
+                  hitSlop={4}
                   onPress={() => pickExpression(e)}
                   style={[styles.exprChip, on && styles.exprChipOn]}
                 >
@@ -228,8 +229,8 @@ export function DialogueScreen(props: Props) {
       </View>
 
       <View style={styles.actions}>
-        <Btn label="다시 가리기" height={56} size={15} onPress={onReset} style={{ flex: 1 }} />
-        <Btn label="다 외웠어요" height={56} size={15} primary onPress={onDone} style={{ flex: 1, borderWidth: 0 }} />
+        <Btn label="다시 가리기" height={42} size={15} onPress={onReset} style={{ flex: 1 }} />
+        <Btn label="다 외웠어요" height={42} size={15} primary onPress={onDone} style={{ flex: 1, borderWidth: 0 }} />
       </View>
     </View>
   );
@@ -294,7 +295,7 @@ const styles = createStyles(() => ({
   root: { flex: 1, paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   segment: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 14, backgroundColor: colors.segment },
-  segBtn: { flex: 1, minHeight: 40, paddingVertical: 6, paddingHorizontal: 4, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  segBtn: { flex: 1, minHeight: 34, paddingVertical: 6, paddingHorizontal: 4, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   segOn: { backgroundColor: colors.white, boxShadow: '0 1px 3px rgba(21,23,28,0.12)' },
   lines: { gap: 12, paddingVertical: 4 },
   actions: { flexDirection: 'row', gap: 10 },
@@ -316,7 +317,7 @@ const styles = createStyles(() => ({
     borderBottomRightRadius: 18,
   },
   playAll: {
-    minHeight: 48,
+    minHeight: 36,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -339,7 +340,7 @@ const styles = createStyles(() => ({
   exprEx: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border },
   exprSpeak: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.track },
   exprChip: {
-    minHeight: 44,
+    minHeight: 34,
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 12,

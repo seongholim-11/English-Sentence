@@ -49,5 +49,5 @@ const styles = createStyles(() => ({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  tab: { width: 72, height: 52, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  tab: { width: 72, height: 40, alignItems: 'center', justifyContent: 'center', gap: 3 },
 }));

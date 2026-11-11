@@ -84,7 +84,7 @@ export function DoneScreen({ result, onNext, onBack }: Props) {
         <Btn label={nextLabel} primary onPress={onNext} style={{ borderWidth: 0 }} />
         <Btn
           label="세트 목록으로"
-          height={52}
+          height={40}
           size={15}
           onPress={onBack}
           style={{ backgroundColor: 'transparent', borderWidth: 0 }}

@@ -171,8 +171,8 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
       </View>
 
       <View style={styles.actions}>
-        <Btn label="다시 볼래요" onPress={() => onMark(false)} icon={compact ? undefined : <AgainIcon />} height={compact ? 50 : 58} size={compact ? 15 : 16} style={{ flex: 1 }} />
-        <Btn label="알아요" primary onPress={() => onMark(true)} icon={compact ? undefined : <CheckIcon />} height={compact ? 50 : 58} size={compact ? 15 : 16} style={{ flex: 1, borderWidth: 0 }} />
+        <Btn label="다시 볼래요" onPress={() => onMark(false)} icon={compact ? undefined : <AgainIcon />} height={compact ? 38 : 44} size={compact ? 15 : 16} style={{ flex: 1 }} />
+        <Btn label="알아요" primary onPress={() => onMark(true)} icon={compact ? undefined : <CheckIcon />} height={compact ? 38 : 44} size={compact ? 15 : 16} style={{ flex: 1, borderWidth: 0 }} />
       </View>
       {compact ? null : (
         <Txt size={12} color={colors.muted} style={{ textAlign: 'center' }}>
@@ -208,7 +208,7 @@ const styles = createStyles(() => ({
   },
   listen: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 36,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

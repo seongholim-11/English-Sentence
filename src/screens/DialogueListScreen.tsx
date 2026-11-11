@@ -83,7 +83,7 @@ export function DialogueListScreen({ progress, onOpen, onBack }: Props) {
               <Txt size={12} color={colors.muted} numberOfLines={1}>
                 {d.expressions.join(' · ')}
               </Txt>
-              <Btn label="암기" accessibilityLabel={LABEL(i, d.title, state)} primary accent={colors.ink} height={46} size={15} onPress={() => onOpen(i)} style={{ borderWidth: 0 }} />
+              <Btn label="암기" accessibilityLabel={LABEL(i, d.title, state)} primary accent={colors.ink} height={38} size={15} onPress={() => onOpen(i)} style={{ borderWidth: 0 }} />
             </View>
           );
         })}

@@ -495,8 +495,8 @@ const styles = createStyles(() => ({
   },
   stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   stepBtn: {
-    width: 56,
-    height: 56,
+    width: 40,
+    height: 40,
     borderRadius: 18,
     backgroundColor: colors.bg,
     borderWidth: 1,
@@ -510,7 +510,7 @@ const styles = createStyles(() => ({
   licenseBox: { padding: 12, borderRadius: 12, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   preset: {
     flex: 1,
-    height: 40,
+    height: 34,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,

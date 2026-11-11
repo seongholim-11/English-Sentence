@@ -57,7 +57,7 @@ export function SetsScreen({ deck, progress, onStudy, onQuiz, onWeak, onBack }: 
       </View>
       <Bar pct={(mastered.size / total) * 100} color={meta.color} track={colors.border} height={6} />
       {weak > 0 && (
-        <Btn label={`헷갈린 카드 ${weak > 20 ? '20장 먼저 ' : ''}복습 (${weak}장)`} height={46} size={14} onPress={() => onWeak(deck)} />
+        <Btn label={`헷갈린 카드 ${weak > 20 ? '20장 먼저 ' : ''}복습 (${weak}장)`} height={38} size={14} onPress={() => onWeak(deck)} />
       )}
 
       <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ gap: GAP }} showsVerticalScrollIndicator={false}>
@@ -94,8 +94,8 @@ export function SetsScreen({ deck, progress, onStudy, onQuiz, onWeak, onBack }: 
               </View>
               <Bar pct={(done / cards.length) * 100} color={meta.color} track={colors.track} height={4} />
               <View style={styles.actions}>
-                <Btn label="암기" primary accent={colors.ink} height={46} size={15} onPress={() => onStudy(ref)} style={{ flex: 1, borderWidth: 0 }} />
-                <Btn label="퀴즈" primary accent={meta.color} height={46} size={15} onPress={() => onQuiz(ref)} style={{ flex: 1, borderWidth: 0 }} />
+                <Btn label="암기" primary accent={colors.ink} height={38} size={15} onPress={() => onStudy(ref)} style={{ flex: 1, borderWidth: 0 }} />
+                <Btn label="퀴즈" primary accent={meta.color} height={38} size={15} onPress={() => onQuiz(ref)} style={{ flex: 1, borderWidth: 0 }} />
               </View>
             </View>
           );

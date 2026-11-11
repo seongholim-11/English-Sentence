@@ -64,6 +64,7 @@ export function Btn({
   size = 16,
   icon,
   style,
+  accessibilityLabel,
 }: {
   label: string;
   onPress: () => void;
@@ -73,10 +74,12 @@ export function Btn({
   size?: number;
   icon?: ReactNode;
   style?: ViewStyle;
+  accessibilityLabel?: string;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => [
         styles.btn,

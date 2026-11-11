@@ -24,6 +24,7 @@ import { dialogues } from './src/data/dialogues';
 import { RoundResult, SetRef, dueIds, isFavorite, roundState, useProgress } from './src/progress';
 import { DialogueScreen, HideMode } from './src/screens/DialogueScreen';
 import { DecksScreen } from './src/screens/DecksScreen';
+import { DialogueListScreen } from './src/screens/DialogueListScreen';
 import { DoneScreen } from './src/screens/DoneScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
@@ -47,7 +48,8 @@ type Screen =
   | { name: 'quiz'; set: SetRef }
   | { name: 'search'; favorites: boolean }
   | { name: 'review'; deck: CardDeckId; queue: string[]; pos: number }
-  | { name: 'dialogue' }
+  | { name: 'dialogues' }
+  | { name: 'dialogue'; index: number }
   | { name: 'done'; result: RoundResult };
 
 export default function App() {
@@ -91,13 +93,19 @@ export default function App() {
     setScreen({ name: 'sets', deck });
   };
 
+  const goDialogues = () => {
+    stopSpeech();
+    setScreen({ name: 'dialogues' });
+  };
+
   // 안드로이드 뒤로 가기: 학습·완료 → 세트 목록 → 홈
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (screen.name === 'home') return false;
       if (screen.name === 'study' || screen.name === 'quiz') goSets(screen.set.deck);
       else if (screen.name === 'done') goSets(screen.result.deck);
-      else if (screen.name === 'sets' || screen.name === 'search') goTab('decks');
+      else if (screen.name === 'sets' || screen.name === 'search' || screen.name === 'dialogues') goTab('decks');
+      else if (screen.name === 'dialogue') goDialogues();
       else goHome();
       return true;
     });
@@ -116,12 +124,18 @@ export default function App() {
   const openDeck = (id: DeckId) => {
     setLastDeck(id);
     if (id === 'dialogue') {
-      setHide('en');
-      setShown({});
-      setScreen({ name: 'dialogue' });
+      setScreen({ name: 'dialogues' });
     } else {
       setScreen({ name: 'sets', deck: id });
     }
+  };
+
+  // 대화문 하나를 연다. 홈의 '이어서'는 지금 차례(pos)의 대화문으로 바로 간다
+  const openDialogue = (index: number) => {
+    setLastDeck('dialogue');
+    setHide('en');
+    setShown({});
+    setScreen({ name: 'dialogue', index });
   };
 
   const startSet = (s: SetRef) => {
@@ -144,7 +158,7 @@ export default function App() {
 
   // 홈의 복습 카드: 오늘 복습할 카드를 최대 20장까지 보여 준다. 없으면 그 덱의 세트 목록으로
   const onReview = (id: DeckId) => {
-    if (id === 'dialogue') return openDeck(id);
+    if (id === 'dialogue') return openDialogue(progress.dialogue.pos);
     const queue = dueIds(progress, id).slice(0, REVIEW_MAX);
     if (queue.length === 0) return openDeck(id);
     setRevealed(false);
@@ -159,17 +173,19 @@ export default function App() {
     else setScreen({ ...s, name: 'review', pos: s.pos + 1 });
   };
 
-  const onDialogueDone = () => {
+  // 어느 편을 외웠든 기록하고, 아직 안 한 다음 편으로 간다. 50편을 다 끝내면 홈으로
+  const onDialogueDone = (index: number) => {
     stopSpeech();
-    const roundFinished = completeDialogue();
     setShown({});
-    if (roundFinished) goHome();
+    const next = completeDialogue(index);
+    if (next === null) goHome();
+    else setScreen({ name: 'dialogue', index: next });
   };
 
   let body;
   switch (screen.name) {
     case 'home':
-      body = <HomeScreen progress={progress} onReview={onReview} onOpenDeck={openDeck} onOpenSet={startSet} onNavigate={goTab} />;
+      body = <HomeScreen progress={progress} onReview={onReview} onOpenDeck={(id) => (id === 'dialogue' ? openDialogue(progress.dialogue.pos) : openDeck(id))} onOpenSet={startSet} onNavigate={goTab} />;
       break;
     case 'decks':
       body = <DecksScreen
@@ -266,11 +282,14 @@ export default function App() {
       );
       break;
     }
+    case 'dialogues':
+      body = <DialogueListScreen progress={progress} onOpen={openDialogue} onBack={() => goTab('decks')} />;
+      break;
     case 'dialogue':
       body = (
         <DialogueScreen
-          dialogue={dialogues[progress.dialogue.pos]}
-          index={progress.dialogue.pos}
+          dialogue={dialogues[screen.index]}
+          index={screen.index}
           count={dialogues.length}
           round={progress.dialogue.round}
           hide={hide}
@@ -281,8 +300,8 @@ export default function App() {
           }}
           onToggleLine={(i) => setShown((s) => ({ ...s, [i]: !s[i] }))}
           onReset={() => setShown({})}
-          onDone={onDialogueDone}
-          onHome={goHome}
+          onDone={() => onDialogueDone(screen.index)}
+          onBack={goDialogues}
           rate={progress.prefs.speechRate}
         />
       );

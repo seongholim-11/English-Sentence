@@ -31,7 +31,7 @@ const continueOf = (p: Progress): { label: string; set: SetRef | null; deck: Dec
 export const deckStats = (p: Progress, d: DeckMeta) => {
   if (d.id === 'dialogue') {
     const total = dialogues.length;
-    return { pct: (p.dialogue.pos / total) * 100, progress: `${p.dialogue.pos} / ${total}편` };
+    return { pct: (p.dialogue.done.length / total) * 100, progress: `${p.dialogue.done.length} / ${total}편` };
   }
   const total = cardDecks[d.id].length;
   const done = p.mastered[d.id].length;

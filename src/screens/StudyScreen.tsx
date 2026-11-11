@@ -37,6 +37,11 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
   // 문장 덱은 앞면이 한국어라 뜻을 본 뒤에만 영어를 읽어 준다
   const canSpeak = deck !== 'sentences' || revealed;
 
+  // 예문은 영단어·구동사 덱에만 있다 (문장 덱의 ex는 힌트)
+  const hasExample = deck !== 'sentences';
+
+  const speakExample = () => say(card.ex, rate);
+
   const speak = () => {
     say(speakText(deck, card), rate);
   };
@@ -78,7 +83,8 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
           </Pressable>
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.tapArea}>
+        <View style={styles.tapArea}>
+        <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.tapContent}>
         <View style={styles.front}>
           <Txt size={meta.bigFront ? (compact ? 36 : 44) : compact ? 24 : 28} weight={700} lineHeight={1.2} style={{ letterSpacing: meta.bigFront ? -0.88 : -0.56 }}>
             {card.front}
@@ -96,18 +102,35 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
               <Txt size={compact ? 19 : 22} weight={600} lineHeight={1.35}>
                 {card.back}
               </Txt>
-              <View style={styles.example}>
-                <Txt size={compact ? 14 : 15} lineHeight={1.4}>
-                  {card.ex}
-                </Txt>
-                <Txt size={compact ? 12 : 13} lineHeight={1.4} color={colors.muted}>
-                  {card.exKo}
-                </Txt>
-              </View>
             </View>
           </View>
         ) : null}
         </Pressable>
+        {revealed ? <View style={{ paddingTop: compact ? 8 : 12 }}>
+          <View style={styles.example}>
+            <View style={styles.exampleText}>
+              <Txt size={compact ? 14 : 15} lineHeight={1.4}>
+                {card.ex}
+              </Txt>
+              <Txt size={compact ? 12 : 13} lineHeight={1.4} color={colors.muted}>
+                {card.exKo}
+              </Txt>
+            </View>
+            {hasExample ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="예문 듣기"
+                hitSlop={6}
+                onPress={speakExample}
+                style={({ pressed }) => [styles.exampleBtn, pressed && { opacity: 0.8 }]}
+              >
+                <SpeakerIcon size={20} color={colors.accent} />
+              </Pressable>
+            ) : null}
+          </View>
+        </View> : null}
+        <Pressable accessible={false} focusable={false} onPress={onToggle} style={{ flexGrow: 1 }} />
+        </View>
         </ScrollView>
         <View style={styles.cardButtons}>
             <Pressable
@@ -188,10 +211,13 @@ const styles = createStyles(() => ({
   // 내용이 짧으면 스크롤 없이 카드를 채우고, 길어서 넘칠 때만 스크롤된다
   scroll: { flex: 1, minHeight: 0 },
   scrollContent: { flexGrow: 1 },
-  tapArea: { flexGrow: 1, gap: 12 },
+  tapArea: { flexGrow: 1 },
+  tapContent: { gap: 12 },
   reveal: { backgroundColor: colors.exampleBg },
   cardButtons: { flexDirection: 'row', gap: 8 },
   front: { flex: 1, justifyContent: 'center', gap: 10 },
-  example: { gap: 4, padding: 12, borderRadius: 14, backgroundColor: colors.exampleBg },
+  example: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 14, backgroundColor: colors.exampleBg },
+  exampleText: { flex: 1, minWidth: 0, gap: 4 },
+  exampleBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentTint },
   actions: { flexDirection: 'row', gap: 10 },
 }));

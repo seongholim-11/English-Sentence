@@ -45,6 +45,9 @@ export function SearchScreen({ progress, initialFavorites, onToggleFavorite, onB
   const speak = (h: Hit) => {
     say(speakText(h.deck, h.card), progress.prefs.speechRate);
   };
+  const speakExample = (h: Hit) => {
+    say(h.card.ex, progress.prefs.speechRate);
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 20) }]}>
@@ -133,9 +136,16 @@ export function SearchScreen({ progress, initialFavorites, onToggleFavorite, onB
                       {item.card.exKo}
                     </Txt>
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel="발음 듣기" hitSlop={8} onPress={() => speak(item)} style={styles.iconBtn}>
-                    <SpeakerIcon />
-                  </Pressable>
+                  <View style={{ gap: 4 }}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={item.deck === 'sentences' ? '발음 듣기' : '단어 듣기'} hitSlop={8} onPress={() => speak(item)} style={styles.iconBtn}>
+                      <SpeakerIcon />
+                    </Pressable>
+                    {item.deck !== 'sentences' ? (
+                      <Pressable accessibilityRole="button" accessibilityLabel="예문 듣기" hitSlop={8} onPress={() => speakExample(item)} style={styles.iconBtn}>
+                        <SpeakerIcon />
+                      </Pressable>
+                    ) : null}
+                  </View>
                 </View>
               )}
             </View>

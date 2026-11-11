@@ -263,6 +263,9 @@ export function SettingsScreen({
             <Txt size={13} color={colors.muted} lineHeight={1.6}>
               글꼴은 Space Grotesk, IBM Plex Sans KR(SIL Open Font License 1.1)이에요.
             </Txt>
+            <Txt size={13} color={colors.muted} lineHeight={1.6}>
+              영어 발음은 Google Cloud Text-to-Speech로 만든 합성 음성이에요. 앱에 포함되어 있어서 인터넷 없이도 들을 수 있어요.
+            </Txt>
           </View>
         )}
       </ScrollView>

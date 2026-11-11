@@ -60,7 +60,8 @@ export type Progress = {
   sets: Record<string, RoundState>;
   // 한 번이라도 '알아요'를 누른 카드 (홈·세트 진행률)
   mastered: Record<CardDeckId, string[]>;
-  dialogue: { round: number; pos: number };
+  // done: 이번 회독에서 외운 대화문 번호(0부터), pos: 이어서 할 차례 (아직 안 한 다음 편)
+  dialogue: { round: number; pos: number; done: number[] };
   // 카드별 간격 복습 상태. 키는 `${deck}:${cardId}`
   cards: Record<string, CardState>;
   // 세트별 퀴즈 최고 점수. 키는 `${deck}:${set}`
@@ -143,7 +144,7 @@ const HISTORY_DAYS = 90;
 const initialProgress = (): Progress => ({
   sets: {},
   mastered: Object.fromEntries(CARD_DECKS.map((d) => [d, []])) as unknown as Record<CardDeckId, string[]>,
-  dialogue: { round: 1, pos: 0 },
+  dialogue: { round: 1, pos: 0, done: [] },
   cards: {},
   quiz: {},
   lastDeck: 'phrasal',
@@ -189,7 +190,11 @@ const sanitize = (raw: Partial<Progress>): Progress => {
   if (p.lastSet && !p.sets[setKey(p.lastSet)]) p.lastSet = null;
   if (p.lastDeck !== 'dialogue' && !CARD_DECKS.includes(p.lastDeck)) p.lastDeck = 'phrasal';
   p.dialogue = { ...base.dialogue, ...raw.dialogue };
-  p.dialogue.pos = Math.min(p.dialogue.pos, dialogues.length - 1);
+  p.dialogue.pos = Math.max(0, Math.min(p.dialogue.pos, dialogues.length - 1));
+  // 예전 저장본에는 done이 없다: 순서대로 pos 앞까지 외운 것으로 본다
+  const rawDone: unknown = (raw.dialogue as { done?: unknown } | undefined)?.done;
+  const doneList = Array.isArray(rawDone) ? rawDone : Array.from({ length: p.dialogue.pos }, (_, i) => i);
+  p.dialogue.done = Array.from(new Set(doneList.filter((n): n is number => Number.isInteger(n) && n >= 0 && n < dialogues.length)));
   if (p.today.date !== dateKey()) p.today = { date: dateKey(), count: 0 };
   p.history = { ...(raw.history ?? {}) };
   // 기록 화면이 생기기 전에 공부한 오늘 분량도 반영한다
@@ -386,20 +391,29 @@ export function useProgress() {
     [update],
   );
 
-  // 대화문 하나를 다 외우면 다음 대화문으로. 마지막이면 다음 회독
-  const completeDialogue = useCallback((): boolean => {
+  // 대화문 하나를 다 외웠다고 기록한다. 어느 편이든 상관없다.
+  // 돌려주는 값: 이어서 할 다음 편 번호, 모든 편을 끝내 다음 회독이 시작되면 null
+  const completeDialogue = useCallback((index: number): number | null => {
     const p = ref.current;
-    if (!p) return false;
-    const finished = p.dialogue.pos + 1 >= dialogues.length;
+    if (!p) return null;
+    const total = dialogues.length;
+    const done = p.dialogue.done.includes(index) ? p.dialogue.done : p.dialogue.done.concat([index]);
+    const finished = done.length >= total;
+    let next = index;
+    for (let i = 1; i < total; i++) {
+      const c = (index + i) % total;
+      if (!done.includes(c)) {
+        next = c;
+        break;
+      }
+    }
     update((cur) => ({
       ...cur,
       ...recordStudy(cur),
       lastDeck: 'dialogue',
-      dialogue: finished
-        ? { round: cur.dialogue.round + 1, pos: 0 }
-        : { round: cur.dialogue.round, pos: cur.dialogue.pos + 1 },
+      dialogue: finished ? { round: cur.dialogue.round + 1, pos: 0, done: [] } : { round: cur.dialogue.round, pos: next, done },
     }));
-    return finished;
+    return finished ? null : next;
   }, [update]);
 
   const setGoal = useCallback((goal: number) => update((p) => ({ ...p, goal: clampGoal(goal) })), [update]);

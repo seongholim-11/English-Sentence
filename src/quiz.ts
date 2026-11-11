@@ -33,6 +33,19 @@ const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const BLANK = '_____';
 
+// 뜻이 쉼표로 나열된 카드끼리 같은 뜻이 겹치면(예: "괜찮은, 좋은"과 "좋은") 오답이 정답처럼 보인다
+const items = (m: string) =>
+  m
+    .replace(/\([^)]*\)/g, '')
+    .split(/[,;·]/)
+    .map((x) => x.replace(/[~\s]+/g, ' ').trim())
+    .filter(Boolean);
+const overlaps = (a: string, b: string) => {
+  const bs = items(b);
+  return items(a).some((x) => bs.includes(x));
+};
+const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
+
 // 오답 보기: 같은 덱에서 뽑되, 정답이나 다른 보기와 같은 문구가 겹치지 않게 (뜻이 같은 카드가 있다)
 // text: 보기로 보이는 문구, taken: 이미 쓴 문구
 const pick = (pool: Card[], n: number, ok: (c: Card) => boolean, text: (c: Card) => string = (c) => c.back, taken: string[] = []): Card[] => {
@@ -56,10 +69,10 @@ const finish = (card: Card, kind: Question['kind'], prompt: string, hint: string
 
 const meaningQuestion = (deck: CardDeckId, card: Card): Question => {
   const pool = cardDecks[deck];
-  const sameTag = (c: Card) => c.tag === card.tag && c.back !== card.back;
+  const sameTag = (c: Card) => c.tag === card.tag && !overlaps(c.back, card.back);
   let wrong = pick(pool, 3, sameTag, (c) => c.back, [card.back]);
   if (wrong.length < 3) {
-    wrong = wrong.concat(pick(pool, 3 - wrong.length, (c) => c.back !== card.back, (c) => c.back, [card.back, ...wrong.map((c) => c.back)]));
+    wrong = wrong.concat(pick(pool, 3 - wrong.length, (c) => !overlaps(c.back, card.back), (c) => c.back, [card.back, ...wrong.map((c) => c.back)]));
   }
   return finish(card, 'meaning', card.front, '알맞은 뜻을 고르세요', card.back, wrong.map((c) => c.back));
 };
@@ -72,7 +85,9 @@ const blankFromExample = (deck: CardDeckId, card: Card): Question | null => {
   const shape = (c: Card) => c.tag === card.tag && c.front !== card.front && c.front.split(' ').length === card.front.split(' ').length;
   const wrong = pick(cardDecks[deck], 3, shape, (c) => c.front, [card.front]).map((c) => c.front);
   if (wrong.length < 3) return null;
-  return finish(card, 'blank', sentence, `${card.exKo} — 빈칸에 알맞은 말은?`, card.front, wrong);
+  // 문장 맨 앞·고유명사처럼 원문에서 대문자로 시작하는 단어를 비웠다면 보기도 대문자로 시작한다
+  const fix = /^[A-Z]/.test(m[2]) ? cap : (w: string) => w;
+  return finish(card, 'blank', sentence, `${card.exKo} — 빈칸에 알맞은 말은?`, fix(card.front), wrong.map(fix));
 };
 
 // 문장 덱: 핵심 표현의 단어를 비운다
@@ -91,17 +106,21 @@ const blankFromSentence = (card: Card, others: Card[]): Question | null => {
   if (!t || t.index === undefined) return null;
   const word = t[0].toLowerCase();
   const wordPool = new Set<string>();
+  // 이미 문장에 있는 단어는 오답으로 내지 않는다 (정답처럼 보인다)
+  const inSentence = new Set(tokens.map((m) => m[0].toLowerCase()));
   for (const o of others) {
     for (const m of o.back.matchAll(/[A-Za-z]+(?:'[A-Za-z]+)?/g)) {
       const w = m[0].toLowerCase();
       if (w.includes("'")) continue;
-      if (w.length >= 4 && !STOP.has(w) && w !== word && Math.abs(w.length - word.length) <= 2) wordPool.add(w);
+      if (w.length >= 4 && !STOP.has(w) && w !== word && !inSentence.has(w) && Math.abs(w.length - word.length) <= 2) wordPool.add(w);
     }
   }
   const wrong = shuffle([...wordPool]).slice(0, 3);
   if (wrong.length < 3) return null;
   const blanked = sentence.slice(0, t.index) + BLANK + sentence.slice(t.index + t[0].length);
-  return finish(card, 'blank', blanked, `${card.front} — 빈칸에 알맞은 말은?`, word, wrong);
+  // 원문에서 대문자로 시작하는 단어(문장 첫머리·고유명사)를 비웠다면 보기도 대문자로 시작한다
+  const fix = /^[A-Z]/.test(t[0]) ? cap : (w: string) => w;
+  return finish(card, 'blank', blanked, `${card.front} — 빈칸에 알맞은 말은?`, fix(word), wrong.map(fix));
 };
 
 export function makeQuiz(deck: CardDeckId, set: number, n = QUIZ_LENGTH): Question[] {

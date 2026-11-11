@@ -20,12 +20,14 @@ export function SettingsScreen({
   onSetGoal,
   onSetPrefs,
   onSetSetSize,
+  onResetAll,
   onNavigate,
 }: {
   progress: Progress;
   onSetGoal: (n: number) => void;
   onSetPrefs: (p: Partial<Prefs>) => void;
   onSetSetSize: (n: number) => void;
+  onResetAll: () => void;
   onNavigate: (t: Tab) => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -35,6 +37,7 @@ export function SettingsScreen({
   // 알림을 바꾸는 동안에는 다시 누르지 못하게 한다
   const [reminderBusy, setReminderBusy] = useState(false);
   const [linkNote, setLinkNote] = useState('');
+  const [confirmReset, setConfirmReset] = useState(false);
   // 세트 크기는 진행 위치가 초기화되므로 한 번 더 확인한다
   const [pendingSize, setPendingSize] = useState<number | null>(null);
   const setSize = progress.prefs.setSize;
@@ -60,7 +63,9 @@ export function SettingsScreen({
     const result = await applyReminder(next);
     setReminderBusy(false);
     if (!next.on) {
-      onSetPrefs({ reminder: next });
+      // 예약을 못 지웠는데 꺼진 것으로 저장하면 알림이 계속 올 수 있으니, 실패하면 켜진 채로 둔다
+      if (result === 'error') setReminderNote('알림을 끄지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+      else onSetPrefs({ reminder: next });
       return;
     }
     if (result === 'ok') {
@@ -335,6 +340,44 @@ export function SettingsScreen({
               이 기기에만 저장돼요
             </Txt>
           </View>
+        </View>
+
+        <View style={styles.card}>
+          <View style={{ gap: 4 }}>
+            <Txt size={17} weight={600}>
+              학습 기록 지우기
+            </Txt>
+            <Txt size={13} color={colors.muted}>
+              외운 카드, 복습 일정, 퀴즈 점수, 연속 학습일을 모두 지우고 처음부터 다시 시작해요. 설정과 즐겨찾기는 그대로예요.
+            </Txt>
+          </View>
+          {confirmReset ? (
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Pressable accessibilityRole="button" onPress={() => setConfirmReset(false)} style={[styles.preset, { flex: 1, height: undefined, minHeight: 44, paddingVertical: 8 }]}>
+                <Txt size={14} weight={600}>
+                  취소
+                </Txt>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  onResetAll();
+                  setConfirmReset(false);
+                }}
+                style={[styles.preset, { flex: 1, height: undefined, minHeight: 44, paddingVertical: 8, backgroundColor: colors.bad, borderColor: colors.bad }]}
+              >
+                <Txt size={14} weight={600} color="#FFFFFF">
+                  정말 지우기
+                </Txt>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable accessibilityRole="button" onPress={() => setConfirmReset(true)} style={[styles.preset, { height: undefined, minHeight: 44, paddingVertical: 8 }]}>
+              <Txt size={14} weight={600} color={colors.bad}>
+                학습 기록 지우기
+              </Txt>
+            </Pressable>
+          )}
         </View>
 
         <Pressable accessibilityRole="link" onPress={() => openLink(PRIVACY_URL)} style={styles.infoRow}>

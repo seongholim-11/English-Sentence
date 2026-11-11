@@ -13,7 +13,7 @@ import {
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, BackHandler, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, AppState, BackHandler, View, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Tab } from './src/components/BottomNav';
@@ -21,7 +21,7 @@ import { stopSpeech } from './src/speech';
 import { LoadErrorScreen, ResetNoticeBanner, SaveErrorBanner } from './src/components/Notice';
 import { CardDeckId, DeckId, applySetSize, deckMeta } from './src/data/decks';
 import { dialogues } from './src/data/dialogues';
-import { RoundResult, SetRef, dueIds, isFavorite, roundState, useProgress } from './src/progress';
+import { RoundResult, SetRef, dateKey, dueIds, isFavorite, roundState, useProgress } from './src/progress';
 import { DialogueScreen, HideMode } from './src/screens/DialogueScreen';
 import { DecksScreen } from './src/screens/DecksScreen';
 import { DialogueListScreen } from './src/screens/DialogueListScreen';
@@ -31,6 +31,7 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { QuizScreen } from './src/screens/QuizScreen';
 import { SearchScreen } from './src/screens/SearchScreen';
 import { SetsScreen } from './src/screens/SetsScreen';
+import { weakIds } from './src/weak';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
 import { applyTheme, colors, createStyles, fontState } from './src/theme';
@@ -47,7 +48,7 @@ type Screen =
   | { name: 'study'; set: SetRef }
   | { name: 'quiz'; set: SetRef }
   | { name: 'search'; favorites: boolean }
-  | { name: 'review'; deck: CardDeckId; queue: string[]; pos: number }
+  | { name: 'review'; deck: CardDeckId; queue: string[]; pos: number; weak?: boolean }
   | { name: 'dialogues' }
   | { name: 'dialogue'; index: number }
   | { name: 'done'; result: RoundResult };
@@ -71,25 +72,40 @@ export default function App() {
   }, []);
   fontState.fallback = !fontsLoaded && (!!fontError || fontTimeout);
 
-  const { progress, loadError, saveError, resetNotice, dismissResetNotice, retryLoad, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
+  const { progress, loadError, saveError, resetNotice, dismissResetNotice, lastGrade, undoLastGrade, clearLastGrade, resetAll, retryLoad, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
   const [hide, setHide] = useState<HideMode>('en');
   const [shown, setShown] = useState<Record<number, boolean>>({});
 
+  // 앱을 켜 둔 채 자정이 지나거나 다시 앞으로 오면 홈의 날짜·복습 장수를 새로 그린다
+  const [, setDay] = useState(dateKey());
+  useEffect(() => {
+    const check = () => setDay((d) => (dateKey() === d ? d : dateKey()));
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && check());
+    const t = setInterval(check, 60000);
+    return () => {
+      sub.remove();
+      clearInterval(t);
+    };
+  }, []);
+
   const goHome = () => {
     stopSpeech();
+    clearLastGrade();
     setScreen({ name: 'home' });
   };
 
   const goTab = (t: Tab) => {
     stopSpeech();
+    clearLastGrade();
     setScreen({ name: t });
   };
 
   const goSets = (deck: CardDeckId) => {
     stopSpeech();
+    clearLastGrade();
     setScreen({ name: 'sets', deck });
   };
 
@@ -147,7 +163,9 @@ export default function App() {
 
   const onMark = (s: SetRef, knew: boolean) => {
     stopSpeech();
-    const result = mark(s, knew);
+    // 화면에 보이는 카드의 위치를 함께 넘긴다: 빠르게 두 번 눌러도 보지 않은 다음 카드는 채점되지 않는다
+    const { round, pos } = roundState(progress, s);
+    const result = mark(s, knew, { round, pos });
     setRevealed(false);
     if (result) setScreen({ name: 'done', result });
   };
@@ -166,9 +184,18 @@ export default function App() {
     setScreen({ name: 'review', deck: id, queue, pos: 0 });
   };
 
+  // 세트 목록의 '헷갈린 카드 복습': 상자가 0번인 카드를 최대 20장
+  const onWeak = (deck: CardDeckId) => {
+    const queue = weakIds(progress, deck).slice(0, REVIEW_MAX);
+    if (queue.length === 0) return;
+    setRevealed(false);
+    setScreen({ name: 'review', deck, queue, pos: 0, weak: true });
+  };
+
   const onReviewMark = (s: { deck: CardDeckId; queue: string[]; pos: number }, knew: boolean) => {
     stopSpeech();
-    review(s.deck, s.queue[s.pos], knew);
+    // s는 카드를 넘길 때마다 새로 만들어지는 화면 상태라, 같은 s로 두 번 오면(빠른 연타) 두 번째는 무시된다
+    if (!review(s.deck, s.queue[s.pos], knew, s)) return;
     setRevealed(false);
     if (s.pos + 1 >= s.queue.length) goHome();
     else setScreen({ ...s, name: 'review', pos: s.pos + 1 });
@@ -203,7 +230,7 @@ export default function App() {
       body = <StatsScreen progress={progress} onNavigate={goTab} />;
       break;
     case 'settings':
-      body = <SettingsScreen progress={progress} onSetGoal={setGoal} onSetPrefs={setPrefs} onSetSetSize={setSetSize} onNavigate={goTab} />;
+      body = <SettingsScreen progress={progress} onSetGoal={setGoal} onSetPrefs={setPrefs} onSetSetSize={setSetSize} onResetAll={resetAll} onNavigate={goTab} />;
       break;
     case 'sets':
       body = (
@@ -212,6 +239,7 @@ export default function App() {
           progress={progress}
           onStudy={startSet}
           onQuiz={startQuiz}
+          onWeak={onWeak}
           onBack={() => goTab('decks')}
         />
       );
@@ -233,6 +261,11 @@ export default function App() {
           onFavorite={(id) => toggleFavorite(DECK_OF(screen), id)}
           onToggle={() => setRevealed((r) => !r)}
           onMark={(knew) => onMark(s, knew)}
+          canUndo={!!lastGrade && lastGrade.deck === s.deck && state.pos > 0 && state.queue[state.pos - 1] === lastGrade.id}
+          onUndo={() => {
+            undoLastGrade();
+            setRevealed(false);
+          }}
           onBack={() => goSets(s.deck)}
         />
       );
@@ -268,7 +301,7 @@ export default function App() {
         <StudyScreen
           deck={r.deck}
           title={`${deckMeta(r.deck).name} 복습`}
-          subtitle={`오늘 복습 · 남은 카드 ${r.queue.length - r.pos}장`}
+          subtitle={`${r.weak ? '헷갈린 카드 복습' : '오늘 복습'} · 남은 카드 ${r.queue.length - r.pos}장`}
           queue={r.queue}
           pos={r.pos}
           revealed={revealed}
@@ -278,6 +311,13 @@ export default function App() {
           onFavorite={(id) => toggleFavorite(DECK_OF(screen), id)}
           onToggle={() => setRevealed((x) => !x)}
           onMark={(knew) => onReviewMark(r, knew)}
+          canUndo={!!lastGrade && lastGrade.deck === r.deck && r.pos > 0 && r.queue[r.pos - 1] === lastGrade.id}
+          onUndo={() => {
+            undoLastGrade();
+            setRevealed(false);
+            // 새 객체로 바꿔야 되돌린 카드를 다시 채점할 수 있다
+            setScreen({ ...r, pos: r.pos - 1 });
+          }}
           onBack={goHome}
         />
       );

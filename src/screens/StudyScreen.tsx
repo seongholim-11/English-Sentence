@@ -22,10 +22,13 @@ type Props = {
   onFavorite: (id: string) => void;
   onToggle: () => void;
   onMark: (knew: boolean) => void;
+  // 직전에 채점한 카드가 있으면 되돌릴 수 있다
+  canUndo: boolean;
+  onUndo: () => void;
   onBack: () => void;
 };
 
-export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate, autoSpeak, isFavorite, onFavorite, onToggle, onMark, onBack }: Props) {
+export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate, autoSpeak, isFavorite, onFavorite, onToggle, onMark, canUndo, onUndo, onBack }: Props) {
   const insets = useSafeAreaInsets();
   // 작은 화면(iPhone SE급)에서는 글자·버튼을 줄이고 아이콘을 뺀다
   const { width, height } = useWindowDimensions();
@@ -72,6 +75,12 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
       <View style={[styles.card, compact && { padding: 14, gap: 8 }]}>
         <View style={styles.cardTop}>
           <Chip label={card.tag} bg={meta.soft} fg={meta.deep} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          {canUndo && (
+            <Pressable accessibilityRole="button" accessibilityLabel="직전 채점 취소" onPress={onUndo} hitSlop={4} style={styles.star}>
+              <AgainIcon size={20} color={colors.muted} />
+            </Pressable>
+          )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={isFavorite(card.id) ? '즐겨찾기 해제' : '즐겨찾기'}
@@ -81,10 +90,11 @@ export function StudyScreen({ deck, title, subtitle, queue, pos, revealed, rate,
           >
             <StarIcon size={22} filled={isFavorite(card.id)} color={isFavorite(card.id) ? '#F2A91B' : colors.muted} />
           </Pressable>
+          </View>
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.tapArea}>
-        <Pressable accessibilityRole="button" accessibilityLabel="카드 뒤집기" onPress={onToggle} style={styles.tapContent}>
+        <Pressable accessibilityRole="button" accessibilityHint={revealed ? '누르면 카드를 다시 가려요' : '누르면 뜻과 예문을 보여 줘요'} onPress={onToggle} style={styles.tapContent}>
         <View style={styles.front}>
           <Txt size={meta.bigFront ? (compact ? 36 : 44) : compact ? 24 : 28} weight={700} lineHeight={1.2} style={{ letterSpacing: meta.bigFront ? -0.88 : -0.56 }}>
             {card.front}

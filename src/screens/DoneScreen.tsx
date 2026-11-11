@@ -22,7 +22,7 @@ export function DoneScreen({ result, onNext, onBack }: Props) {
 
   const summary =
     `${result.total}장 중 ${result.known}장을 알고 있어요. ` +
-    (againN > 0 ? `모르는 ${againN}장만 다음 회독에 다시 나와요.` : '이 덱은 한 바퀴 다 외웠어요.');
+    (againN > 0 ? `모르는 ${againN}장만 다음 회독에 다시 나와요.` : '이 세트는 한 바퀴 다 외웠어요.');
   const nextLabel =
     againN > 0 ? `다시 볼 ${againN}장으로 ${result.round + 1}회독 시작` : `처음부터 ${result.round + 1}회독 시작`;
 

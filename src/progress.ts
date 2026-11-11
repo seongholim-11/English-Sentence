@@ -80,6 +80,8 @@ export type Progress = {
   favorites: string[];
   streak: number;
   lastStudyDate: string | null;
+  // 지금까지 공부한 날 수. history는 최근 기록만 남기므로 총계는 따로 센다
+  studyDays: number;
 };
 
 const STORAGE_KEY = 'dasibom/progress/v1';
@@ -112,7 +114,11 @@ const cardKey = (deck: CardDeckId, id: string) => `${deck}:${id}`;
 
 const graded = (cards: Progress['cards'], deck: CardDeckId, id: string, knew: boolean): Progress['cards'] => {
   const key = cardKey(deck, id);
-  const box = knew ? Math.min((cards[key]?.box ?? 0) + 1, INTERVALS.length - 1) : 0;
+  const prev = cards[key];
+  // 아직 복습일이 안 된 카드는 맞혀도 그대로 둔다: 같은 날 회독을 반복하거나 퀴즈를 찍어서 상자가 급히 오르지 않게.
+  // 처음 본 카드와 복습일이 된 카드만 한 칸 올린다
+  if (knew && prev && prev.due > dateKey()) return cards;
+  const box = knew ? Math.min((prev?.box ?? 0) + 1, INTERVALS.length - 1) : 0;
   return { ...cards, [key]: { box, due: addDays(INTERVALS[box]) } };
 };
 
@@ -158,6 +164,7 @@ const initialProgress = (): Progress => ({
   favorites: [],
   streak: 0,
   lastStudyDate: null,
+  studyDays: 0,
 });
 
 // 저장된 값을 필드마다 검사해서 쓸 수 있는 것만 남기고, 깨진 필드는 기본값으로 되돌린다.
@@ -270,19 +277,24 @@ export const sanitize = (rawIn: unknown): Progress => {
   });
   p.streak = isInt(raw.streak) ? raw.streak : 0;
   p.lastStudyDate = typeof raw.lastStudyDate === 'string' && DATE_RE.test(raw.lastStudyDate) ? raw.lastStudyDate : null;
+  // 예전 저장본에는 studyDays가 없다: 남아 있는 기록의 날 수로 시작한다. 기록보다 적을 수는 없다
+  const historyDays = Object.values(p.history).filter((n) => n > 0).length;
+  p.studyDays = Math.max(historyDays, isInt(raw.studyDays) ? raw.studyDays : 0);
   return p;
 };
 
 // 하루에 한 번 이상 공부하면 연속 일수가 이어진다
-const recordStudy = (p: Progress): Pick<Progress, 'today' | 'history' | 'streak' | 'lastStudyDate'> => {
+const recordStudy = (p: Progress): Pick<Progress, 'today' | 'history' | 'streak' | 'lastStudyDate' | 'studyDays'> => {
   const today = dateKey();
   const count = p.today.date === today ? p.today.count + 1 : 1;
+  // 오늘 처음 공부하는 것이면 공부한 날을 하루 더한다 (history가 잘려도 총계는 남는다)
+  const studyDays = p.studyDays + ((p.history[today] ?? 0) > 0 ? 0 : 1);
   let streak = p.streak;
   if (p.lastStudyDate !== today) streak = p.lastStudyDate === yesterdayKey() ? p.streak + 1 : 1;
   const history = { ...p.history, [today]: count };
   const keys = Object.keys(history).sort();
   for (const k of keys.slice(0, Math.max(0, keys.length - HISTORY_DAYS))) delete history[k];
-  return { today: { date: today, count }, history, streak, lastStudyDate: today };
+  return { today: { date: today, count }, history, streak, lastStudyDate: today, studyDays };
 };
 
 export const visibleStreak = (p: Progress) =>
@@ -324,6 +336,8 @@ export function useProgress() {
 
   // 저장된 기록이 심하게 깨져서 새로 시작했을 때 true (원본은 따로 보관해 둔다)
   const [resetNotice, setResetNotice] = useState(false);
+  // 직전에 채점한 카드와 그 직전 상태. 되돌리기에 쓴다
+  const [lastGrade, setLastGrade] = useState<{ deck: CardDeckId; id: string; before: Progress } | null>(null);
 
   const load = useCallback(() => {
     setLoadError(false);
@@ -335,7 +349,10 @@ export function useProgress() {
         };
         let p: Progress;
         try {
-          p = s ? sanitize(JSON.parse(s)) : initialProgress();
+          const parsed: unknown = s ? JSON.parse(s) : {};
+          // JSON은 맞지만 객체가 아니면(문자열·배열 등) 깨진 저장본으로 보고 원본을 보관한다
+          if (s && !isObj(parsed)) throw new Error('unexpected shape');
+          p = s ? sanitize(parsed) : initialProgress();
         } catch {
           // 저장값이 깨졌으면 원본을 먼저 따로 보관하고, 보관에 성공했을 때만 새로 시작한다
           AsyncStorage.setItem(`${STORAGE_KEY}.corrupt`, s ?? '').then(
@@ -404,12 +421,15 @@ export function useProgress() {
     [update],
   );
 
-  // 카드 한 장 채점. 회독이 끝나면 결과를 돌려주고 다음 회독을 준비해 둔다
+  // 카드 한 장 채점. 회독이 끝나면 결과를 돌려주고 다음 회독을 준비해 둔다.
+  // shown: 화면에 보이는 카드의 회독·위치. 빠르게 두 번 눌러 화면이 다시 그려지기 전에 또 불리면
+  // 실제 위치는 이미 다음 카드라서 맞지 않는다. 그때는 보지 않은 카드를 채점하지 않고 무시한다
   const mark = useCallback(
-    (s: SetRef, knew: boolean): RoundResult | null => {
+    (s: SetRef, knew: boolean, shown?: { round: number; pos: number }): RoundResult | null => {
       const p = ref.current;
       if (!p) return null;
       const r = roundState(p, s);
+      if (shown && (shown.round !== r.round || shown.pos !== r.pos)) return null;
       const id = r.queue[r.pos];
       const known = r.known + (knew ? 1 : 0);
       const again = knew ? r.again : r.again.concat([id]);
@@ -417,6 +437,7 @@ export function useProgress() {
       const mastered = knew && !done.includes(id) ? done.concat([id]) : done;
       const finished = r.pos + 1 >= r.queue.length;
       const next = finished ? freshRound(s, r.round + 1, again) : { ...r, pos: r.pos + 1, known, again };
+      setLastGrade({ deck: s.deck, id, before: p });
       update((cur) => ({
         ...cur,
         ...recordStudy(cur),
@@ -431,9 +452,18 @@ export function useProgress() {
     [update],
   );
 
-  // 홈의 복습 카드: 카드 한 장 채점 (세트 진행과는 따로)
+  // 홈의 복습 카드: 카드 한 장 채점 (세트 진행과는 따로).
+  // step: 화면에 보이는 복습 한 장을 가리키는 객체(카드를 넘길 때마다 새로 만들어진다).
+  // 같은 step으로 또 불리면 빠르게 두 번 누른 것이라 한 번만 채점한다. 채점했으면 true
+  const lastReviewStep = useRef<object | null>(null);
   const review = useCallback(
-    (deck: CardDeckId, id: string, knew: boolean) =>
+    (deck: CardDeckId, id: string, knew: boolean, step?: object): boolean => {
+      if (!ref.current) return false;
+      if (step) {
+        if (lastReviewStep.current === step) return false;
+        lastReviewStep.current = step;
+      }
+      setLastGrade({ deck, id, before: ref.current });
       update((cur) => ({
         ...cur,
         ...recordStudy(cur),
@@ -442,7 +472,9 @@ export function useProgress() {
           knew && !cur.mastered[deck].includes(id)
             ? { ...cur.mastered, [deck]: cur.mastered[deck].concat([id]) }
             : cur.mastered,
-      })),
+      }));
+      return true;
+    },
     [update],
   );
 
@@ -479,13 +511,29 @@ export function useProgress() {
         break;
       }
     }
+    // 이미 외운 편을 다시 외웠다고 눌러도 오늘 본 카드·공부한 날은 한 번만 센다
+    const first = !p.dialogue.done.includes(index);
     update((cur) => ({
       ...cur,
-      ...recordStudy(cur),
+      ...(first ? recordStudy(cur) : {}),
       lastDeck: 'dialogue',
       dialogue: finished ? { round: cur.dialogue.round + 1, pos: 0, done: [] } : { round: cur.dialogue.round, pos: next, done },
     }));
     return finished ? null : next;
+  }, [update]);
+
+  // 직전 채점을 취소한다. 설정과 즐겨찾기는 지금 값을 유지하고, 나머지는 채점 전으로 되돌린다
+  const undoLastGrade = useCallback(() => {
+    if (!lastGrade) return;
+    setLastGrade(null);
+    update((cur) => ({ ...lastGrade.before, prefs: cur.prefs, favorites: cur.favorites }));
+  }, [lastGrade, update]);
+  const clearLastGrade = useCallback(() => setLastGrade(null), []);
+
+  // 학습 기록(외운 카드·복습 일정·퀴즈·진행 위치·연속 학습일)을 모두 지운다. 설정·즐겨찾기·목표는 유지
+  const resetAll = useCallback(() => {
+    setLastGrade(null);
+    update((cur) => ({ ...initialProgress(), prefs: cur.prefs, favorites: cur.favorites, goal: cur.goal }));
   }, [update]);
 
   const setGoal = useCallback((goal: number) => update((p) => ({ ...p, goal: clampGoal(goal) })), [update]);
@@ -511,5 +559,5 @@ export function useProgress() {
 
   const setPrefs = useCallback((prefs: Partial<Prefs>) => update((p) => ({ ...p, prefs: { ...p.prefs, ...prefs } })), [update]);
 
-  return { progress, loadError, saveError, resetNotice, dismissResetNotice, retryLoad: load, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
+  return { progress, loadError, saveError, resetNotice, dismissResetNotice, lastGrade, undoLastGrade, clearLastGrade, resetAll, retryLoad: load, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
 }

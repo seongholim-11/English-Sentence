@@ -10,8 +10,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.damadu.lingoloop",
       "buildNumber": "1",
+      "requireFullScreen": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "ko",
+        "RCTAsyncStorage_excludeFromBackup": false,
+        "UISupportedInterfaceOrientations~ipad": ["UIInterfaceOrientationPortrait", "UIInterfaceOrientationPortraitUpsideDown"]
       }
     },
     "android": {
@@ -22,6 +26,12 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.damadu.lingoloop",
+      "allowBackup": true,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {

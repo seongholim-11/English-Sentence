@@ -18,7 +18,8 @@ export function StatsScreen({ progress, onNavigate }: { progress: Progress; onNa
   const week = days.reduce((sum, d) => sum + d.count, 0);
   const max = Math.max(progress.goal, ...days.map((d) => d.count));
   const mastered = (Object.keys(cardDecks) as CardDeckId[]).reduce((sum, d) => sum + progress.mastered[d].length, 0);
-  const studied = Object.values(progress.history).filter((n) => n > 0).length;
+  // history는 최근 90일만 남으므로 총계는 따로 센 값을 쓴다
+  const studied = progress.studyDays;
   const goalY = (progress.goal / max) * CHART_H;
 
   const stats: [string, string][] = [

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Bar } from '../components/Bits';
+import { Bar, Btn } from '../components/Bits';
 import { BottomNav, Tab } from '../components/BottomNav';
 import { ArrowRightIcon, FlameIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
@@ -10,6 +10,10 @@ import { DeckId, DeckMeta, cardDecks, deckMeta, decks } from '../data/decks';
 import { dialogues } from '../data/dialogues';
 import { Progress, SetRef, dueIds, roundState, todayCount, visibleStreak } from '../progress';
 import { colors, createStyles } from '../theme';
+
+// 아직 아무것도 공부하지 않은 새 사용자인지
+const isFresh = (p: Progress) =>
+  Object.keys(p.sets).length === 0 && p.dialogue.done.length === 0 && Object.keys(p.cards).length === 0 && p.streak === 0;
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -73,6 +77,18 @@ export function HomeScreen({ progress, onReview, onOpenDeck, onOpenSet, onNaviga
           </View>
         </View>
 
+        {isFresh(progress) && (
+          <View style={styles.welcome}>
+            <Txt size={17} weight={700}>
+              처음이세요? 이렇게 시작해 보세요
+            </Txt>
+            <Txt size={14} color={colors.muted} lineHeight={1.55}>
+              {'① 영단어 1세트를 열어요.\n② 카드를 탭해서 뜻과 예문을 보고, 아는 카드는 "알아요", 헷갈리면 "다시 볼래요"를 눌러요.\n③ 한 바퀴가 끝나면 모르는 카드만 다음 회독에 다시 나와요.\n④ 잊을 때쯤 홈의 "오늘의 복습"에 카드가 다시 나와요.'}
+            </Txt>
+            <Btn label="영단어 1세트 시작하기" primary accent={colors.accent} height={50} size={15} onPress={() => onOpenSet({ deck: 'words', set: 0 })} style={{ borderWidth: 0 }} />
+          </View>
+        )}
+
         <View style={styles.hero}>
           <View style={styles.heroTop}>
             <View style={{ gap: 4 }}>
@@ -103,7 +119,8 @@ export function HomeScreen({ progress, onReview, onOpenDeck, onOpenSet, onNaviga
           </Pressable>
         </View>
 
-        <ReviewSection progress={progress} onReview={onReview} />
+        {/* 처음에는 복습할 카드가 없으니 안내만 보여 준다 */}
+        {!isFresh(progress) && <ReviewSection progress={progress} onReview={onReview} />}
       </ScrollView>
 
       <BottomNav active="home" onNavigate={onNavigate} />
@@ -213,6 +230,7 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  welcome: { gap: 10, padding: 18, borderRadius: 22, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   hero: { backgroundColor: colors.heroBg, borderRadius: 24, padding: 20, gap: 16 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   heroBtn: {

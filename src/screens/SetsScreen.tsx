@@ -6,6 +6,7 @@ import { Bar, Btn, IconButton } from '../components/Bits';
 import { Txt } from '../components/Txt';
 import { CardDeckId, cardDecks, deckMeta, getSetSize, setCards, setCount } from '../data/decks';
 import { Progress, SetRef, roundState, setKey } from '../progress';
+import { weakIds } from '../weak';
 import { colors, createStyles } from '../theme';
 
 const CARD_H = 156;
@@ -18,11 +19,12 @@ type Props = {
   progress: Progress;
   onStudy: (s: SetRef) => void;
   onQuiz: (s: SetRef) => void;
+  onWeak: (deck: CardDeckId) => void;
   onBack: () => void;
 };
 
 // 세트마다 큰 카드 하나: 암기와 퀴즈 버튼이 들어 있다
-export function SetsScreen({ deck, progress, onStudy, onQuiz, onBack }: Props) {
+export function SetsScreen({ deck, progress, onStudy, onQuiz, onWeak, onBack }: Props) {
   const insets = useSafeAreaInsets();
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const meta = deckMeta(deck);
@@ -30,6 +32,7 @@ export function SetsScreen({ deck, progress, onStudy, onQuiz, onBack }: Props) {
   const count = setCount(deck);
   const mastered = new Set(progress.mastered[deck]);
   const last = progress.lastSet?.deck === deck ? progress.lastSet.set : 0;
+  const weak = weakIds(progress, deck).length;
 
   // 마지막으로 공부한 세트가 보이는 위치에서 시작한다
   useEffect(() => {
@@ -53,6 +56,9 @@ export function SetsScreen({ deck, progress, onStudy, onQuiz, onBack }: Props) {
         </Txt>
       </View>
       <Bar pct={(mastered.size / total) * 100} color={meta.color} track={colors.border} height={6} />
+      {weak > 0 && (
+        <Btn label={`헷갈린 카드 ${weak > 20 ? '20장 먼저 ' : ''}복습 (${weak}장)`} height={46} size={14} onPress={() => onWeak(deck)} />
+      )}
 
       <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ gap: GAP }} showsVerticalScrollIndicator={false}>
         {Array.from({ length: count }, (_, set) => {

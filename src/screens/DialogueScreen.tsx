@@ -33,8 +33,9 @@ type Props = {
   rate: number;
 };
 
-// 전체 듣기에서 줄과 줄 사이 쉬는 시간
+// 전체 듣기에서 줄과 줄 사이 쉬는 시간, 한 줄이 이만큼 지나도 안 끝나면 다음 줄로 넘어간다
 const LINE_GAP_MS = 400;
+const LINE_MAX_MS = 20000;
 
 export function DialogueScreen(props: Props) {
   const { dialogue, index, count, round, hide, shown, onHide, onToggleLine, onReset, onDone, onBack, rate } = props;
@@ -80,9 +81,12 @@ export function DialogueScreen(props: Props) {
     }
     const line = dialogue.lines[i];
     setPlaying(i);
+    if (gap.current) clearTimeout(gap.current);
+    gap.current = setTimeout(() => playFrom(i + 1, id), LINE_MAX_MS);
     scroll.current?.scrollTo({ y: Math.max(0, (ys.current[i] ?? 0) - 12), animated: true });
     speak(line.en, rate, line.who === 'A' ? 'main' : 'alt', () => {
       if (id !== run.current) return;
+      if (gap.current) clearTimeout(gap.current);
       gap.current = setTimeout(() => playFrom(i + 1, id), LINE_GAP_MS);
     });
   };

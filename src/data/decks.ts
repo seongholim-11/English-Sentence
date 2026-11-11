@@ -194,12 +194,22 @@ export const decks: DeckMeta[] = [
 
 export const deckMeta = (id: DeckId): DeckMeta => decks.find((d) => d.id === id) ?? decks[1];
 
-// 카드 덱은 50장씩 세트로 나눠 공부한다
-export const SET_SIZE = 50;
+// 카드 덱은 세트로 나눠 공부한다. 한 세트의 카드 수는 설정에서 고른다 (기본 50장)
+export const SET_SIZES = [10, 20, 30, 50, 100];
+export const DEFAULT_SET_SIZE = 50;
 
-export const setCount = (deck: CardDeckId) => Math.ceil(cardDecks[deck].length / SET_SIZE);
+export const validSetSize = (n: unknown): number => (typeof n === 'number' && SET_SIZES.includes(n) ? n : DEFAULT_SET_SIZE);
 
-export const setCards = (deck: CardDeckId, set: number) => cardDecks[deck].slice(set * SET_SIZE, (set + 1) * SET_SIZE);
+// 지금 쓰는 세트 크기. 저장된 설정을 불러올 때와 화면을 그릴 때 applySetSize로 맞춘다
+let currentSetSize = DEFAULT_SET_SIZE;
+export const applySetSize = (n: unknown) => {
+  currentSetSize = validSetSize(n);
+};
+export const getSetSize = () => currentSetSize;
+
+export const setCount = (deck: CardDeckId) => Math.ceil(cardDecks[deck].length / currentSetSize);
+
+export const setCards = (deck: CardDeckId, set: number) => cardDecks[deck].slice(set * currentSetSize, (set + 1) * currentSetSize);
 
 // 학습 카드에서 읽어 줄 영어: 문장 덱은 앞면이 한국어라 뒷면을 읽는다
 export const speakText = (deck: CardDeckId, c: Card): string => (deck === 'sentences' ? c.back : c.front);

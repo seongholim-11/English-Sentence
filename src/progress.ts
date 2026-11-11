@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { CardDeckId, DeckId, cardDecks, setCards, setCount } from './data/decks';
+import { CardDeckId, DeckId, applySetSize, cardDecks, setCards, setCount, validSetSize } from './data/decks';
 import { dialogues } from './data/dialogues';
 import { Reminder, defaultReminder } from './reminder';
 import { DAILY_GOAL } from './theme';
@@ -27,6 +27,8 @@ export type Prefs = {
   // 화면 테마와 글자 크기 배율
   theme: 'system' | 'light' | 'dark';
   fontScale: number;
+  // 한 세트의 카드 수 (SET_SIZES 중 하나)
+  setSize: number;
 };
 
 export const SPEECH_RATES: { label: string; rate: number }[] = [
@@ -48,7 +50,7 @@ export const THEMES: { label: string; theme: Prefs['theme'] }[] = [
   { label: '다크', theme: 'dark' },
 ];
 
-export const defaultPrefs = (): Prefs => ({ speechRate: 0.9, autoSpeak: false, reminder: defaultReminder(), theme: 'system', fontScale: 1 });
+export const defaultPrefs = (): Prefs => ({ speechRate: 0.9, autoSpeak: false, reminder: defaultReminder(), theme: 'system', fontScale: 1, setSize: 50 });
 
 export type CardState = { box: number; due: string };
 
@@ -162,6 +164,8 @@ const initialProgress = (): Progress => ({
 // 세트로 나누기 전의 덱별 회독 상태(decks)는 버리고, 외운 카드와 연속 기록은 그대로 둔다.
 const sanitize = (raw: Partial<Progress>): Progress => {
   const base = initialProgress();
+  // 세트 번호는 세트 크기에 따라 달라지므로, 세트를 걸러 내기 전에 저장된 크기부터 적용한다
+  applySetSize(raw.prefs?.setSize);
   const p: Progress = { ...base, ...raw, sets: {}, mastered: { ...base.mastered } } as Progress;
   const cardIds = Object.fromEntries(CARD_DECKS.map((d) => [d, new Set(cardDecks[d].map((c) => c.id))])) as Record<CardDeckId, Set<string>>;
   for (const deck of CARD_DECKS) p.mastered[deck] = (raw.mastered?.[deck] ?? []).filter((id) => cardIds[deck].has(id));
@@ -201,6 +205,7 @@ const sanitize = (raw: Partial<Progress>): Progress => {
   if (raw.today?.date === p.today.date) p.history[p.today.date] = Math.max(p.history[p.today.date] ?? 0, p.today.count);
   p.goal = clampGoal(raw.goal ?? DAILY_GOAL);
   p.prefs = { ...defaultPrefs(), ...raw.prefs };
+  p.prefs.setSize = validSetSize(p.prefs.setSize);
   p.prefs.reminder = { ...defaultReminder(), ...raw.prefs?.reminder };
   p.favorites = (raw.favorites ?? []).filter((k) => {
     const i = k.indexOf(':');
@@ -427,7 +432,17 @@ export function useProgress() {
     [update],
   );
 
+  // 세트 크기를 바꾸면 세트 번호가 달라지므로 세트별 회독 위치·퀴즈 최고점·마지막 세트는 비운다.
+  // 외운 카드, 카드별 복습 일정, 연속 학습 기록은 카드 기준이라 그대로 남는다
+  const setSetSize = useCallback(
+    (n: number) => {
+      applySetSize(n);
+      update((p) => ({ ...p, prefs: { ...p.prefs, setSize: validSetSize(n) }, sets: {}, quiz: {}, lastSet: null }));
+    },
+    [update],
+  );
+
   const setPrefs = useCallback((prefs: Partial<Prefs>) => update((p) => ({ ...p, prefs: { ...p.prefs, ...prefs } })), [update]);
 
-  return { progress, loadError, saveError, retryLoad: load, retrySave, toggleFavorite, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
+  return { progress, loadError, saveError, retryLoad: load, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
 }

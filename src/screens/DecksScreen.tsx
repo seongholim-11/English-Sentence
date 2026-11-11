@@ -5,7 +5,7 @@ import { Bar } from '../components/Bits';
 import { BottomNav, Tab } from '../components/BottomNav';
 import { SearchIcon, StarIcon } from '../components/Icons';
 import { Txt } from '../components/Txt';
-import { DeckId, DeckMeta, decks, setCount } from '../data/decks';
+import { DeckId, DeckMeta, decks, getSetSize, setCount } from '../data/decks';
 import { Progress } from '../progress';
 import { colors, createStyles } from '../theme';
 import { deckStats } from './HomeScreen';
@@ -18,7 +18,7 @@ type Props = {
 };
 
 const detail = (d: DeckMeta, p: Progress) =>
-  d.id === 'dialogue' ? `${p.dialogue.round}회독 중` : `${setCount(d.id)}세트 · 50장씩`;
+  d.id === 'dialogue' ? `${p.dialogue.round}회독 중` : `${setCount(d.id)}세트 · ${getSetSize()}장씩`;
 
 export function DecksScreen({ progress, onOpenDeck, onSearch, onNavigate }: Props) {
   const insets = useSafeAreaInsets();

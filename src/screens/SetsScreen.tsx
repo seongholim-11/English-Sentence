@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bar, Btn, IconButton } from '../components/Bits';
 import { Txt } from '../components/Txt';
-import { CardDeckId, SET_SIZE, cardDecks, deckMeta, setCards, setCount } from '../data/decks';
+import { CardDeckId, cardDecks, deckMeta, getSetSize, setCards, setCount } from '../data/decks';
 import { Progress, SetRef, roundState, setKey } from '../progress';
 import { colors, createStyles } from '../theme';
 
@@ -45,7 +45,7 @@ export function SetsScreen({ deck, progress, onStudy, onQuiz, onBack }: Props) {
             {meta.name}
           </Txt>
           <Txt size={12} color={colors.muted}>
-            {`${withCommas(total)}장 · ${SET_SIZE}장씩 ${count}세트`}
+            {`${withCommas(total)}장 · ${getSetSize()}장씩 ${count}세트`}
           </Txt>
         </View>
         <Txt size={15} weight={600} tabular>
@@ -78,7 +78,7 @@ export function SetsScreen({ deck, progress, onStudy, onQuiz, onBack }: Props) {
                     {String(set + 1)}
                   </Txt>
                   <Txt size={13} color={colors.muted} tabular>
-                    {`${set * SET_SIZE + 1}–${set * SET_SIZE + cards.length}`}
+                    {`${set * getSetSize() + 1}–${set * getSetSize() + cards.length}`}
                   </Txt>
                 </View>
                 <Txt size={12} weight={500} color={colors.muted} tabular>

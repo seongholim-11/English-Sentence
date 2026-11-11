@@ -19,7 +19,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Tab } from './src/components/BottomNav';
 import { stopSpeech } from './src/speech';
 import { LoadErrorScreen, SaveErrorBanner } from './src/components/Notice';
-import { CardDeckId, DeckId, deckMeta } from './src/data/decks';
+import { CardDeckId, DeckId, applySetSize, deckMeta } from './src/data/decks';
 import { dialogues } from './src/data/dialogues';
 import { RoundResult, SetRef, dueIds, isFavorite, roundState, useProgress } from './src/progress';
 import { DialogueScreen, HideMode } from './src/screens/DialogueScreen';
@@ -71,7 +71,7 @@ export default function App() {
   }, []);
   fontState.fallback = !fontsLoaded && (!!fontError || fontTimeout);
 
-  const { progress, loadError, saveError, retryLoad, retrySave, toggleFavorite, setPrefs, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
+  const { progress, loadError, saveError, retryLoad, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
@@ -115,6 +115,7 @@ export default function App() {
   // 테마와 글자 크기를 이번 렌더에 적용한다. 화면들은 렌더할 때마다 현재 값을 읽는다
   const scheme = useColorScheme();
   const themePref = progress?.prefs.theme ?? 'system';
+  applySetSize(progress?.prefs.setSize);
   applyTheme(themePref === 'system' ? (scheme === 'dark' ? 'dark' : 'light') : themePref, progress?.prefs.fontScale ?? 1);
 
   if (!fontsLoaded && !fontState.fallback) return <View style={styles.root} />;
@@ -202,7 +203,7 @@ export default function App() {
       body = <StatsScreen progress={progress} onNavigate={goTab} />;
       break;
     case 'settings':
-      body = <SettingsScreen progress={progress} onSetGoal={setGoal} onSetPrefs={setPrefs} onNavigate={goTab} />;
+      body = <SettingsScreen progress={progress} onSetGoal={setGoal} onSetPrefs={setPrefs} onSetSetSize={setSetSize} onNavigate={goTab} />;
       break;
     case 'sets':
       body = (

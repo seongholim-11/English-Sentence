@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNav, Tab } from '../components/BottomNav';
 import { Txt } from '../components/Txt';
 import { FONT_SCALES, GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES, THEMES } from '../progress';
+import { SET_SIZES } from '../data/decks';
 import { Reminder, applyReminder, reminderSupported, timeLabel } from '../reminder';
 import { PRIVACY_URL } from '../links';
 import { speak } from '../speech';
@@ -17,17 +18,22 @@ export function SettingsScreen({
   progress,
   onSetGoal,
   onSetPrefs,
+  onSetSetSize,
   onNavigate,
 }: {
   progress: Progress;
   onSetGoal: (n: number) => void;
   onSetPrefs: (p: Partial<Prefs>) => void;
+  onSetSetSize: (n: number) => void;
   onNavigate: (t: Tab) => void;
 }) {
   const insets = useSafeAreaInsets();
   const goal = progress.goal;
   const reminder = progress.prefs.reminder;
   const [reminderNote, setReminderNote] = useState('');
+  // 세트 크기는 진행 위치가 초기화되므로 한 번 더 확인한다
+  const [pendingSize, setPendingSize] = useState<number | null>(null);
+  const setSize = progress.prefs.setSize;
   const [notices, setNotices] = useState(false);
 
   const changeReminder = async (next: Reminder) => {
@@ -102,6 +108,66 @@ export function SettingsScreen({
               );
             })}
           </View>
+        </View>
+
+        <View style={styles.card}>
+          <View style={{ gap: 4 }}>
+            <Txt size={17} weight={600}>
+              한 세트의 카드 수
+            </Txt>
+            <Txt size={13} color={colors.muted}>
+              영단어·구동사·문장 덱을 몇 장씩 나눠 공부할지 정해요. 처음엔 50장이에요.
+            </Txt>
+          </View>
+          <View style={styles.presets}>
+            {SET_SIZES.map((n) => {
+              const on = n === setSize;
+              return (
+                <Pressable
+                  key={n}
+                  accessibilityRole="button"
+                  accessibilityLabel={`한 세트 ${n}장`}
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setPendingSize(on ? null : n)}
+                  style={[styles.preset, on && { backgroundColor: colors.ink, borderColor: colors.ink }]}
+                >
+                  <Txt size={14} weight={600} color={on ? colors.white : colors.ink} tabular>
+                    {String(n)}
+                  </Txt>
+                </Pressable>
+              );
+            })}
+          </View>
+          {pendingSize !== null && (
+            <View style={{ gap: 10 }}>
+              <Txt size={13} lineHeight={1.45} color={colors.muted}>
+                {`${pendingSize}장씩으로 바꾸면 세트 번호가 달라져서, 진행 중이던 회독 위치와 퀴즈 최고 점수가 처음으로 돌아가요. 외운 카드, 복습 일정, 연속 학습일은 그대로예요.`}
+              </Txt>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setPendingSize(null)}
+                  style={[styles.preset, { flex: 1, height: undefined, minHeight: 44, paddingVertical: 8 }]}
+                >
+                  <Txt size={14} weight={600}>
+                    취소
+                  </Txt>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    onSetSetSize(pendingSize);
+                    setPendingSize(null);
+                  }}
+                  style={[styles.preset, { flex: 1, height: undefined, minHeight: 44, paddingVertical: 8, backgroundColor: colors.ink, borderColor: colors.ink }]}
+                >
+                  <Txt size={14} weight={600} color={colors.white}>
+                    {`${pendingSize}장씩으로 바꾸기`}
+                  </Txt>
+                </Pressable>
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.card}>

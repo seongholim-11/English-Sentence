@@ -35,7 +35,10 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -58,6 +61,12 @@
     ],
     "experiments": {
       "baseUrl": "/English-Sentence"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ff5d79b6-c1df-455a-abfb-2f95583a6dc2"
+      }
+    },
+    "owner": "seongholim"
   }
 }

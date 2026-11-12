@@ -1,6 +1,6 @@
 # App Store 제출 문구 초안 (한국어)
 
-> 기능 설명은 현재 코드 기준입니다. 가격, 연락처, 스크린샷은 아직 정해지지 않아 `[ ]`로 남겼습니다.
+> 기능 설명은 현재 코드 기준입니다. 가격·연령 등급·지원 URL·저작권은 정해진 값을 적어 두었고, 연락처 이메일은 App Store Connect에 직접 입력해야 해서 `[ ]`로 남겼습니다.
 
 ## 앱 이름 (30자 이하)
 
@@ -62,11 +62,11 @@
 | --- | --- |
 | 카테고리 | 기본: 교육 / 보조: 참고 자료 |
 | 개인정보처리방침 URL | https://seongholim-11.github.io/English-Sentence/privacy/ |
-| 지원 URL | [ ] 예: https://github.com/seongholim-11/English-Sentence/issues 또는 별도 페이지 |
-| 연락처 (이메일/전화) | [ ] App Store Connect에 직접 입력 |
-| 저작권 | [ ] 예: 2026 (이름) |
-| 가격 | [ ] |
-| 연령 등급 | **4+가 아닐 가능성이 커요.** 앱은 비속어를 뺐지만, 영단어·예문에 alcohol·beer·smoke·drug, gun·weapon·murder·terrorist·assault 같은 낱말과 mild한 표현(stupid, idiot, jerk, "My boss is going to murder me")이 있어요. 설문에 아래처럼 정직하게 답하면 9+ ~ 13+ 사이로 나올 것으로 예상하고, 최종 등급은 App Store Connect 설문 결과로 정해져요. 아래 "연령 등급 설문 답변" 참고 |
+| 지원 URL | https://github.com/seongholim-11/English-Sentence/issues (공개 페이지, 이슈로 문의 가능) |
+| 연락처 (이메일/전화) | [ ] App Store Connect에 직접 입력 (심사팀에만 보이고 앱스토어에는 공개되지 않음) |
+| 저작권 | `2026 seongholim` (GitHub 아이디와 같은 표기. 앱스토어에 보이는 판매자 이름은 Apple Developer 계정의 이름이 따로 표시됨) |
+| 가격 | 무료 (인앱 구매·광고 없음 → 계약·세금·은행 정보 설정 불필요) |
+| 연령 등급 | **목표 13+** (결정됨). 예문을 순화하지 않고 그대로 낸다. 영단어·예문에 alcohol·beer·smoke·drug, gun·weapon·murder·terrorist·assault 같은 낱말과 약한 표현(stupid, idiot, jerk)이 있어서 설문에 아래 표대로 정직하게 답하면 9+~13+ 사이로 나올 것으로 예상하고, 최종 등급은 App Store Connect 설문 결과로 정해져요. 계산된 등급이 13+보다 낮게 나오면 App Store Connect의 연령 등급 설정에서 더 높은 등급을 직접 고를 수 있는지 확인하세요(있다고 알고 있지만 제가 확인하지는 못했어요). |
 | 개인정보 수집 항목 | "데이터 수집 안 함" — 계정 없음, 분석·광고 SDK 없음, 서버 전송 없음. 기기 백업(iCloud·Google)에 학습 기록이 포함될 수 있음(운영체제 기능, 개발자는 받지 않음) |
 | 암호화 | `ITSAppUsesNonExemptEncryption: false`로 이미 설정됨 |
 

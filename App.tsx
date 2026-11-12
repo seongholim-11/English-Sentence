@@ -362,9 +362,12 @@ export default function App() {
     <SafeAreaProvider>
       <View style={styles.root}>
         <StatusBar style={colors.mode === 'dark' ? 'light' : 'dark'} />
-        {body}
-        {saveError && <SaveErrorBanner onRetry={retrySave} />}
-        {resetNotice && !saveError && <ResetNoticeBanner onClose={dismissResetNotice} />}
+        {/* iPad·넓은 웹 화면에서는 폰 화면 폭의 가운데 열로 보여 준다 */}
+        <View style={styles.column}>
+          {body}
+          {saveError && <SaveErrorBanner onRetry={retrySave} />}
+          {resetNotice && !saveError && <ResetNoticeBanner onClose={dismissResetNotice} />}
+        </View>
       </View>
     </SafeAreaProvider>
   );
@@ -381,4 +384,5 @@ function Loading() {
 
 const styles = createStyles(() => ({
   root: { flex: 1, backgroundColor: colors.bg },
+  column: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center' },
 }));

@@ -1,7 +1,8 @@
 import { ComponentRef, useRef, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ParsedBackup, exportBackup, parseBackup, pickBackupFile } from '../backup';
 import { BottomNav, Tab } from '../components/BottomNav';
 import { Txt } from '../components/Txt';
 import { FONT_SCALES, GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES, THEMES } from '../progress';
@@ -21,6 +22,7 @@ export function SettingsScreen({
   onSetPrefs,
   onSetSetSize,
   onResetAll,
+  onRestore,
   onNavigate,
 }: {
   progress: Progress;
@@ -28,6 +30,7 @@ export function SettingsScreen({
   onSetPrefs: (p: Partial<Prefs>) => void;
   onSetSetSize: (n: number) => void;
   onResetAll: () => void;
+  onRestore: (p: Progress) => void;
   onNavigate: (t: Tab) => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -38,6 +41,49 @@ export function SettingsScreen({
   const [reminderBusy, setReminderBusy] = useState(false);
   const [linkNote, setLinkNote] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
+  // 백업 가져오기: 붙여 넣은 내용 → 검사 결과 미리보기 → 확인하면 바꾼다
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [preview, setPreview] = useState<Extract<ParsedBackup, { ok: true }> | null>(null);
+  const [backupNote, setBackupNote] = useState('');
+  const isWeb = Platform.OS === 'web';
+
+  const doExport = async () => {
+    setBackupNote('');
+    try {
+      const r = await exportBackup(progress);
+      if (r === 'downloaded') setBackupNote('백업 파일을 내려받았어요. 안전한 곳에 보관해 두세요.');
+      else if (r === 'shared') setBackupNote('백업을 내보냈어요. 보관한 내용은 나중에 가져오기에서 붙여 넣으면 돼요.');
+    } catch {
+      setBackupNote('백업을 내보내지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+    }
+  };
+  const checkImport = (text: string) => {
+    setBackupNote('');
+    const r = parseBackup(text);
+    if (r.ok) setPreview(r);
+    else {
+      setPreview(null);
+      setBackupNote(r.reason);
+    }
+  };
+  const pickFile = async () => {
+    setBackupNote('');
+    try {
+      const text = await pickBackupFile();
+      if (text !== null) {
+        setImportText(text);
+        checkImport(text);
+      }
+    } catch {
+      setBackupNote('파일을 읽지 못했어요.');
+    }
+  };
+  const closeImport = () => {
+    setImportOpen(false);
+    setImportText('');
+    setPreview(null);
+  };
   // 세트 크기는 진행 위치가 초기화되므로 한 번 더 확인한다
   const [pendingSize, setPendingSize] = useState<number | null>(null);
   const setSize = progress.prefs.setSize;
@@ -345,6 +391,114 @@ export function SettingsScreen({
         <View style={styles.card}>
           <View style={{ gap: 4 }}>
             <Txt size={17} weight={600}>
+              백업
+            </Txt>
+            <Txt size={13} color={colors.muted}>
+              학습 기록과 설정을 내보내 두었다가, 기기를 바꾸거나 기록이 사라졌을 때 가져올 수 있어요. 내보낸 내용은 내가 직접 보관하고, 앱은 어디에도 보내지 않아요.
+            </Txt>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Pressable accessibilityRole="button" onPress={doExport} style={[styles.preset, { flex: 1, height: undefined, minHeight: 40, paddingVertical: 8 }]}>
+              <Txt size={14} weight={600}>
+                백업 내보내기
+              </Txt>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: importOpen }}
+              onPress={() => (importOpen ? closeImport() : setImportOpen(true))}
+              style={[styles.preset, { flex: 1, height: undefined, minHeight: 40, paddingVertical: 8 }]}
+            >
+              <Txt size={14} weight={600}>
+                {importOpen ? '가져오기 닫기' : '백업 가져오기'}
+              </Txt>
+            </Pressable>
+          </View>
+          {importOpen && (
+            <View style={{ gap: 10 }}>
+              <Txt size={13} color={colors.muted} lineHeight={1.5}>
+                {isWeb ? '내보낸 백업 파일을 고르거나, 내용을 아래에 붙여 넣어 주세요.' : '내보낼 때 복사해 둔 백업 내용을 아래에 붙여 넣어 주세요.'}
+              </Txt>
+              {isWeb && (
+                <Pressable accessibilityRole="button" onPress={pickFile} style={[styles.preset, { height: undefined, minHeight: 40, paddingVertical: 8 }]}>
+                  <Txt size={14} weight={600}>
+                    파일 고르기
+                  </Txt>
+                </Pressable>
+              )}
+              <TextInput
+                accessibilityLabel="백업 내용"
+                multiline
+                value={importText}
+                onChangeText={(t) => {
+                  setImportText(t);
+                  setPreview(null);
+                }}
+                placeholder="여기에 백업 내용 붙여 넣기"
+                placeholderTextColor={colors.muted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.backupInput}
+              />
+              {!preview && (
+                <Pressable accessibilityRole="button" onPress={() => checkImport(importText)} style={[styles.preset, { height: undefined, minHeight: 40, paddingVertical: 8 }]}>
+                  <Txt size={14} weight={600}>
+                    내용 확인
+                  </Txt>
+                </Pressable>
+              )}
+              {preview && (
+                <View style={{ gap: 10 }}>
+                  <View style={styles.sample}>
+                    <Txt size={14} weight={600}>
+                      이 백업으로 바꿀까요?
+                    </Txt>
+                    <Txt size={13} color={colors.muted} lineHeight={1.5}>
+                      {`외운 카드 ${Object.values(preview.progress.mastered).reduce((n, ids) => n + ids.length, 0)}장 · 공부한 날 ${preview.progress.studyDays}일 · 연속 ${preview.progress.streak}일 · 외운 대화문 ${preview.progress.dialogue.done.length}편`}
+                    </Txt>
+                    {preview.exportedAt && (
+                      <Txt size={12} color={colors.muted}>
+                        {`내보낸 날: ${preview.exportedAt.slice(0, 10)}`}
+                      </Txt>
+                    )}
+                    <Txt size={12} color={colors.bad}>
+                      지금 이 기기의 기록과 설정은 백업 내용으로 바뀌어요.
+                    </Txt>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <Pressable accessibilityRole="button" onPress={() => setPreview(null)} style={[styles.preset, { flex: 1, height: undefined, minHeight: 40, paddingVertical: 8 }]}>
+                      <Txt size={14} weight={600}>
+                        취소
+                      </Txt>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => {
+                        onRestore(preview.progress);
+                        closeImport();
+                        setBackupNote('백업을 가져왔어요.');
+                      }}
+                      style={[styles.preset, { flex: 1, height: undefined, minHeight: 40, paddingVertical: 8, backgroundColor: colors.ink, borderColor: colors.ink }]}
+                    >
+                      <Txt size={14} weight={600} color={colors.white}>
+                        가져오기
+                      </Txt>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+          {backupNote !== '' && (
+            <Txt size={13} color={backupNote.startsWith('백업을 가져왔어요') || backupNote.includes('내려받았어요') || backupNote.includes('내보냈어요') ? colors.good : colors.bad} accessibilityLiveRegion="polite">
+              {backupNote}
+            </Txt>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <View style={{ gap: 4 }}>
+            <Txt size={17} weight={600}>
               학습 기록 지우기
             </Txt>
             <Txt size={13} color={colors.muted}>
@@ -506,6 +660,18 @@ const styles = createStyles(() => ({
   },
   presets: { flexDirection: 'row', gap: 8 },
   sample: { gap: 4, padding: 14, borderRadius: 14, backgroundColor: colors.exampleBg },
+  backupInput: {
+    minHeight: 110,
+    maxHeight: 200,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    color: colors.ink,
+    fontSize: 13,
+    textAlignVertical: 'top',
+  },
   linkRow: { minHeight: 44, justifyContent: 'center' },
   licenseBox: { padding: 12, borderRadius: 12, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   preset: {

@@ -536,6 +536,16 @@ export function useProgress() {
     update((cur) => ({ ...initialProgress(), prefs: cur.prefs, favorites: cur.favorites, goal: cur.goal }));
   }, [update]);
 
+  // 백업에서 가져온 기록으로 통째로 바꾼다 (설정·즐겨찾기 포함). 세트 크기도 함께 맞춘다
+  const restoreProgress = useCallback(
+    (next: Progress) => {
+      applySetSize(next.prefs.setSize);
+      setLastGrade(null);
+      update(() => next);
+    },
+    [update],
+  );
+
   const setGoal = useCallback((goal: number) => update((p) => ({ ...p, goal: clampGoal(goal) })), [update]);
 
   const toggleFavorite = useCallback(
@@ -559,5 +569,5 @@ export function useProgress() {
 
   const setPrefs = useCallback((prefs: Partial<Prefs>) => update((p) => ({ ...p, prefs: { ...p.prefs, ...prefs } })), [update]);
 
-  return { progress, loadError, saveError, resetNotice, dismissResetNotice, lastGrade, undoLastGrade, clearLastGrade, resetAll, retryLoad: load, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
+  return { progress, loadError, saveError, resetNotice, dismissResetNotice, lastGrade, undoLastGrade, clearLastGrade, resetAll, restoreProgress, retryLoad: load, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal };
 }

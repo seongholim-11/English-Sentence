@@ -72,7 +72,7 @@ export default function App() {
   }, []);
   fontState.fallback = !fontsLoaded && (!!fontError || fontTimeout);
 
-  const { progress, loadError, saveError, resetNotice, dismissResetNotice, lastGrade, undoLastGrade, clearLastGrade, resetAll, retryLoad, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
+  const { progress, loadError, saveError, resetNotice, dismissResetNotice, lastGrade, undoLastGrade, clearLastGrade, resetAll, restoreProgress, retryLoad, retrySave, toggleFavorite, setPrefs, setSetSize, setLastDeck, openSet, mark, review, quizAnswer, recordQuiz, completeDialogue, setGoal } = useProgress();
 
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [revealed, setRevealed] = useState(false);
@@ -230,7 +230,7 @@ export default function App() {
       body = <StatsScreen progress={progress} onNavigate={goTab} />;
       break;
     case 'settings':
-      body = <SettingsScreen progress={progress} onSetGoal={setGoal} onSetPrefs={setPrefs} onSetSetSize={setSetSize} onResetAll={resetAll} onNavigate={goTab} />;
+      body = <SettingsScreen progress={progress} onSetGoal={setGoal} onSetPrefs={setPrefs} onSetSetSize={setSetSize} onResetAll={resetAll} onRestore={restoreProgress} onNavigate={goTab} />;
       break;
     case 'sets':
       body = (

@@ -1,0 +1,55 @@
+{
+  "images": [
+    {
+      "file": "01-loop.png",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "02-cards.png",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "03-review.png",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "04-study.png",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "05-decks.png",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "06-quiz.png",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "07-dialogue.png",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "08-stats.png",
+      "width": 2064,
+      "height": 2752
+    }
+  ],
+  "pair": {
+    "width": 4128,
+    "height": 2752
+  },
+  "seam": {
+    "mismatchedChannels": 208,
+    "maxChannelDifference": 1
+  },
+  "chipTabletGap": 237.92724609375,
+  "textMatches": true,
+  "iphoneUnchanged": true
+}

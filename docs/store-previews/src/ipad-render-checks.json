@@ -1,0 +1,164 @@
+[
+  {
+    "file": "01-loop.png",
+    "text": [
+      "한 번 보고 끝내지 말고\n다시 돌려 보세요\n\n영어 회독 앱 링고루프",
+      "돌려 볼수록\n익숙해져요\n\n영단어 · 구동사 · 문장 · 대화문을 카드로 한 바퀴씩"
+    ],
+    "fonts": true,
+    "overflow": [],
+    "screens": [
+      {
+        "natural": [
+          2064,
+          2752
+        ],
+        "rendered": [
+          1536,
+          2048
+        ]
+      }
+    ]
+  },
+  {
+    "file": "02-cards.png",
+    "text": [
+      "한 번 보고 끝내지 말고\n다시 돌려 보세요\n\n영어 회독 앱 링고루프",
+      "돌려 볼수록\n익숙해져요\n\n영단어 · 구동사 · 문장 · 대화문을 카드로 한 바퀴씩"
+    ],
+    "fonts": true,
+    "overflow": [],
+    "screens": [
+      {
+        "natural": [
+          2064,
+          2752
+        ],
+        "rendered": [
+          1536,
+          2048
+        ]
+      }
+    ]
+  },
+  {
+    "file": "03-review.png",
+    "text": [
+      "잊을 때쯤\n다시 나와요\n\n1·3·7·14·30일 간격 복습"
+    ],
+    "fonts": true,
+    "overflow": [],
+    "screens": [
+      {
+        "natural": [
+          2064,
+          2752
+        ],
+        "rendered": [
+          1296,
+          1728
+        ]
+      }
+    ]
+  },
+  {
+    "file": "04-study.png",
+    "text": [
+      "탭해서 확인하고\n알아요·다시 볼래요\n\n예문과 발음까지 한 번에"
+    ],
+    "fonts": true,
+    "overflow": [],
+    "screens": [
+      {
+        "natural": [
+          2064,
+          2752
+        ],
+        "rendered": [
+          1296,
+          1728
+        ]
+      }
+    ]
+  },
+  {
+    "file": "05-decks.png",
+    "text": [
+      "단어부터 대화문까지\n한 곳에서\n\n세트로 나눠 부담 없이 시작"
+    ],
+    "fonts": true,
+    "overflow": [],
+    "screens": [
+      {
+        "natural": [
+          2064,
+          2752
+        ],
+        "rendered": [
+          1296,
+          1728
+        ]
+      }
+    ]
+  },
+  {
+    "file": "06-quiz.png",
+    "text": [
+      "세트마다\n퀴즈로 확인\n\n뜻 고르기 · 빈칸 채우기"
+    ],
+    "fonts": true,
+    "overflow": [],
+    "screens": [
+      {
+        "natural": [
+          2064,
+          2752
+        ],
+        "rendered": [
+          1296,
+          1728
+        ]
+      }
+    ]
+  },
+  {
+    "file": "07-dialogue.png",
+    "text": [
+      "대화를 가리고\n말해 보세요\n\n전체 듣기 · 표현 설명"
+    ],
+    "fonts": true,
+    "overflow": [],
+    "screens": [
+      {
+        "natural": [
+          2064,
+          2752
+        ],
+        "rendered": [
+          1296,
+          1728
+        ]
+      }
+    ]
+  },
+  {
+    "file": "08-stats.png",
+    "text": [
+      "가입도 광고도 없이\n내 기록은 내 기기에\n\n인터넷 없이도 들을 수 있는 영어 발음"
+    ],
+    "fonts": true,
+    "overflow": [],
+    "screens": [
+      {
+        "natural": [
+          2064,
+          2752
+        ],
+        "rendered": [
+          1296,
+          1728
+        ]
+      }
+    ]
+  }
+]

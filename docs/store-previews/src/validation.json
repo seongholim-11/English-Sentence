@@ -1,0 +1,81 @@
+{
+  "images": [
+    {
+      "width": 1320,
+      "height": 2868,
+      "file": "01-loop.png"
+    },
+    {
+      "width": 1320,
+      "height": 2868,
+      "file": "02-cards.png"
+    },
+    {
+      "width": 1320,
+      "height": 2868,
+      "file": "03-review.png"
+    },
+    {
+      "width": 1320,
+      "height": 2868,
+      "file": "04-study.png"
+    },
+    {
+      "width": 1320,
+      "height": 2868,
+      "file": "05-decks.png"
+    },
+    {
+      "width": 1320,
+      "height": 2868,
+      "file": "06-quiz.png"
+    },
+    {
+      "width": 1320,
+      "height": 2868,
+      "file": "07-dialogue.png"
+    },
+    {
+      "width": 1320,
+      "height": 2868,
+      "file": "08-stats.png"
+    }
+  ],
+  "pair": {
+    "width": 2640,
+    "height": 2868
+  },
+  "seam": {
+    "mismatchedChannels": 220,
+    "maxChannelDifference": 1
+  },
+  "chips": [
+    {
+      "blur": "none",
+      "left": 2200,
+      "right": 2530
+    },
+    {
+      "blur": "none",
+      "left": 2200,
+      "right": 2530
+    },
+    {
+      "blur": "none",
+      "left": 2200,
+      "right": 2530
+    },
+    {
+      "blur": "none",
+      "left": 2200,
+      "right": 2530
+    }
+  ],
+  "unchanged": [
+    "03-review",
+    "04-study",
+    "05-decks",
+    "06-quiz",
+    "08-stats"
+  ]
+}

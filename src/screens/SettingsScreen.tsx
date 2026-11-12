@@ -1,8 +1,9 @@
-import { ComponentRef, useRef, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { ComponentRef, useEffect, useRef, useState } from 'react';
+import { BackHandler, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ParsedBackup, exportBackup, parseBackup, pickBackupFile } from '../backup';
+import { IconButton } from '../components/Bits';
 import { BottomNav, Tab } from '../components/BottomNav';
 import { Txt } from '../components/Txt';
 import { FONT_SCALES, GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES, THEMES } from '../progress';
@@ -14,6 +15,18 @@ import { speak } from '../speech';
 import { colors, createStyles } from '../theme';
 
 const PRESETS = [10, 20, 30, 50, 100];
+
+type Page = 'study' | 'sound' | 'reminder' | 'display' | 'data' | 'about' | 'licenses';
+const PAGE_TITLES: Record<Page, string> = {
+  study: '학습',
+  sound: '발음',
+  reminder: '복습 알림',
+  display: '화면',
+  data: '백업·데이터',
+  about: '앱 정보',
+  licenses: '출처·라이선스',
+};
+const SPEED_LABEL = (rate: number) => SPEECH_RATES.find((r) => r.rate === rate)?.label ?? '보통';
 const STEP = 5;
 
 export function SettingsScreen({
@@ -87,15 +100,32 @@ export function SettingsScreen({
   // 세트 크기는 진행 위치가 초기화되므로 한 번 더 확인한다
   const [pendingSize, setPendingSize] = useState<number | null>(null);
   const setSize = progress.prefs.setSize;
-  const [notices, setNotices] = useState(false);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
-  // 출처는 화면 맨 아래에 펼쳐지므로, 열면 "출처·라이선스" 줄이 위로 오도록 내려서 내용이 바로 보이게 한다
-  const wantScroll = useRef(false);
-  const noticesY = useRef(0);
-  const toggleNotices = () => {
-    wantScroll.current = !notices;
-    setNotices(!notices);
-  };
+  // 설정은 종류별 페이지로 나뉜다. null이면 목록
+  const [page, setPage] = useState<Page | null>(null);
+  const rateLabel = SPEED_LABEL(progress.prefs.speechRate);
+  const themeLabel = THEMES.find((t) => t.theme === progress.prefs.theme)?.label ?? '시스템';
+  const fontLabel = FONT_SCALES.find((f) => f.scale === progress.prefs.fontScale)?.label ?? '보통';
+
+  // 페이지를 옮기면 맨 위에서 시작하고, 열어 둔 확인 창은 닫는다. 안드로이드 뒤로 가기는 목록으로 돌아간다
+  useEffect(() => {
+    scroll.current?.scrollTo({ y: 0, animated: false });
+    setConfirmReset(false);
+    setPendingSize(null);
+    setImportOpen(false);
+    setImportText('');
+    setPreview(null);
+    setBackupNote('');
+    setLinkNote('');
+  }, [page]);
+  useEffect(() => {
+    if (page === null) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setPage(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [page]);
 
   const openLink = (url: string) => {
     setLinkNote('');
@@ -133,26 +163,160 @@ export function SettingsScreen({
     <View style={styles.root}>
       <ScrollView
         ref={scroll}
-        onContentSizeChange={() => {
-          // 펼친 내용이 그려져 길이가 정해진 뒤에 내린다
-          if (wantScroll.current) {
-            wantScroll.current = false;
-            scroll.current?.scrollTo({ y: Math.max(0, noticesY.current - 16), animated: true });
-          }
-        }}
         style={{ flex: 1 }}
         contentContainerStyle={[styles.body, { paddingTop: insets.top + 16 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ gap: 4 }}>
-          <Txt size={13} weight={500} color={colors.muted}>
-            나에게 맞게
-          </Txt>
-          <Txt size={28} weight={700} style={styles.tight}>
-            설정
-          </Txt>
-        </View>
+        {page === null ? (
+          <>
+            <View style={{ gap: 4 }}>
+              <Txt size={13} weight={500} color={colors.muted}>
+                나에게 맞게
+              </Txt>
+              <Txt size={28} weight={700} style={styles.tight}>
+                설정
+              </Txt>
+            </View>
+            <View style={{ gap: 10 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`학습, ${`하루 ${goal}장 · 한 세트 ${setSize}장`}`}
+              onPress={() => setPage('study')}
+              style={({ pressed }) => [styles.hubRow, pressed && { opacity: 0.85 }]}
+            >
+              <View style={{ flex: 1, gap: 3 }}>
+                <Txt size={17} weight={600}>
+                  학습
+                </Txt>
+                <Txt size={13} color={colors.muted}>
+                  {`하루 ${goal}장 · 한 세트 ${setSize}장`}
+                </Txt>
+              </View>
+              <Txt size={22} color={colors.muted}>
+                ›
+              </Txt>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`발음, ${`${rateLabel} · 자동 재생 ${progress.prefs.autoSpeak ? '켬' : '끔'}`}`}
+              onPress={() => setPage('sound')}
+              style={({ pressed }) => [styles.hubRow, pressed && { opacity: 0.85 }]}
+            >
+              <View style={{ flex: 1, gap: 3 }}>
+                <Txt size={17} weight={600}>
+                  발음
+                </Txt>
+                <Txt size={13} color={colors.muted}>
+                  {`${rateLabel} · 자동 재생 ${progress.prefs.autoSpeak ? '켬' : '끔'}`}
+                </Txt>
+              </View>
+              <Txt size={22} color={colors.muted}>
+                ›
+              </Txt>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`복습 알림, ${reminder.on ? `매일 ${timeLabel(reminder)}` : '꺼짐'}`}
+              onPress={() => setPage('reminder')}
+              style={({ pressed }) => [styles.hubRow, pressed && { opacity: 0.85 }]}
+            >
+              <View style={{ flex: 1, gap: 3 }}>
+                <Txt size={17} weight={600}>
+                  복습 알림
+                </Txt>
+                <Txt size={13} color={colors.muted}>
+                  {reminder.on ? `매일 ${timeLabel(reminder)}` : '꺼짐'}
+                </Txt>
+              </View>
+              <Txt size={22} color={colors.muted}>
+                ›
+              </Txt>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`화면, ${`${themeLabel} · 글자 ${fontLabel}`}`}
+              onPress={() => setPage('display')}
+              style={({ pressed }) => [styles.hubRow, pressed && { opacity: 0.85 }]}
+            >
+              <View style={{ flex: 1, gap: 3 }}>
+                <Txt size={17} weight={600}>
+                  화면
+                </Txt>
+                <Txt size={13} color={colors.muted}>
+                  {`${themeLabel} · 글자 ${fontLabel}`}
+                </Txt>
+              </View>
+              <Txt size={22} color={colors.muted}>
+                ›
+              </Txt>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`백업·데이터, ${'백업 내보내기·가져오기, 학습 기록 지우기'}`}
+              onPress={() => setPage('data')}
+              style={({ pressed }) => [styles.hubRow, pressed && { opacity: 0.85 }]}
+            >
+              <View style={{ flex: 1, gap: 3 }}>
+                <Txt size={17} weight={600}>
+                  백업·데이터
+                </Txt>
+                <Txt size={13} color={colors.muted}>
+                  {'백업 내보내기·가져오기, 학습 기록 지우기'}
+                </Txt>
+              </View>
+              <Txt size={22} color={colors.muted}>
+                ›
+              </Txt>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`앱 정보, ${'앱 이름, 저장 위치, 개인정보처리방침'}`}
+              onPress={() => setPage('about')}
+              style={({ pressed }) => [styles.hubRow, pressed && { opacity: 0.85 }]}
+            >
+              <View style={{ flex: 1, gap: 3 }}>
+                <Txt size={17} weight={600}>
+                  앱 정보
+                </Txt>
+                <Txt size={13} color={colors.muted}>
+                  {'앱 이름, 저장 위치, 개인정보처리방침'}
+                </Txt>
+              </View>
+              <Txt size={22} color={colors.muted}>
+                ›
+              </Txt>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`출처·라이선스, ${'영단어·발음기호·글꼴·음성 출처'}`}
+              onPress={() => setPage('licenses')}
+              style={({ pressed }) => [styles.hubRow, pressed && { opacity: 0.85 }]}
+            >
+              <View style={{ flex: 1, gap: 3 }}>
+                <Txt size={17} weight={600}>
+                  출처·라이선스
+                </Txt>
+                <Txt size={13} color={colors.muted}>
+                  {'영단어·발음기호·글꼴·음성 출처'}
+                </Txt>
+              </View>
+              <Txt size={22} color={colors.muted}>
+                ›
+              </Txt>
+            </Pressable>
+            </View>
+          </>
+        ) : (
+          <View style={styles.pageHead}>
+            <IconButton label="설정으로" onPress={() => setPage(null)} />
+            <Txt size={22} weight={700} style={styles.tight}>
+              {PAGE_TITLES[page]}
+            </Txt>
+          </View>
+        )}
 
+        {page === 'study' && (
+          <>
         <View style={styles.card}>
           <View style={{ gap: 4 }}>
             <Txt size={17} weight={600}>
@@ -195,6 +359,7 @@ export function SettingsScreen({
             })}
           </View>
         </View>
+
 
         <View style={styles.card}>
           <View style={{ gap: 4 }}>
@@ -256,6 +421,11 @@ export function SettingsScreen({
           )}
         </View>
 
+          </>
+        )}
+
+        {page === 'sound' && (
+          <>
         <View style={styles.card}>
           <View style={{ gap: 4 }}>
             <Txt size={17} weight={600}>
@@ -305,6 +475,11 @@ export function SettingsScreen({
           </View>
         </View>
 
+          </>
+        )}
+
+        {page === 'reminder' && (
+          <>
         <View style={styles.card}>
           <View style={styles.infoRow}>
             <View style={{ flex: 1, gap: 4 }}>
@@ -340,6 +515,11 @@ export function SettingsScreen({
           )}
         </View>
 
+          </>
+        )}
+
+        {page === 'display' && (
+          <>
         <View style={styles.card}>
           <View style={{ gap: 4 }}>
             <Txt size={17} weight={600}>
@@ -369,25 +549,11 @@ export function SettingsScreen({
           </View>
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.infoRow}>
-            <Txt size={15} weight={600}>
-              앱 이름
-            </Txt>
-            <Txt size={15} color={colors.muted}>
-              링고루프
-            </Txt>
-          </View>
-          <View style={styles.infoRow}>
-            <Txt size={15} weight={600}>
-              학습 기록
-            </Txt>
-            <Txt size={15} color={colors.muted}>
-              이 기기에만 저장돼요
-            </Txt>
-          </View>
-        </View>
+          </>
+        )}
 
+        {page === 'data' && (
+          <>
         <View style={styles.card}>
           <View style={{ gap: 4 }}>
             <Txt size={17} weight={600}>
@@ -496,6 +662,7 @@ export function SettingsScreen({
           )}
         </View>
 
+
         <View style={styles.card}>
           <View style={{ gap: 4 }}>
             <Txt size={17} weight={600}>
@@ -534,6 +701,31 @@ export function SettingsScreen({
           )}
         </View>
 
+          </>
+        )}
+
+        {page === 'about' && (
+          <>
+        <View style={styles.card}>
+          <View style={styles.infoRow}>
+            <Txt size={15} weight={600}>
+              앱 이름
+            </Txt>
+            <Txt size={15} color={colors.muted}>
+              링고루프
+            </Txt>
+          </View>
+          <View style={styles.infoRow}>
+            <Txt size={15} weight={600}>
+              학습 기록
+            </Txt>
+            <Txt size={15} color={colors.muted}>
+              이 기기에만 저장돼요
+            </Txt>
+          </View>
+        </View>
+
+
         <Pressable accessibilityRole="link" onPress={() => openLink(PRIVACY_URL)} style={styles.infoRow}>
           <Txt size={15} weight={600}>
             개인정보처리방침
@@ -543,27 +735,18 @@ export function SettingsScreen({
           </Txt>
         </Pressable>
 
+
         {linkNote !== '' && (
           <Txt size={13} color={colors.bad}>
             {linkNote}
           </Txt>
         )}
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: notices }}
-          onLayout={(e) => (noticesY.current = e.nativeEvent.layout.y)}
-          onPress={toggleNotices}
-          style={styles.infoRow}
-        >
-          <Txt size={15} weight={600}>
-            출처·라이선스
-          </Txt>
-          <Txt size={15} color={colors.muted}>
-            {notices ? '접기' : '보기'}
-          </Txt>
-        </Pressable>
-        {notices && (
+          </>
+        )}
+
+        {page === 'licenses' && (
+          <>
           <View style={{ gap: 10 }}>
             <Txt size={13} color={colors.muted} lineHeight={1.6}>
               영단어 덱은 FrequencyWords(OpenSubtitles 자막 빈도 목록, CC BY-SA 4.0)를 원형 기준으로 묶고 기초 기능어·감탄사·인명·비속어를 뺀 뒤 뜻과 예문을 덧붙여 만들었어요. 같은 조건(CC BY-SA 4.0)으로 공유해요.
@@ -587,6 +770,13 @@ export function SettingsScreen({
               영어 발음은 Google Cloud Text-to-Speech로 만든 합성 음성이에요. 앱에 포함되어 있어서 인터넷 없이도 들을 수 있어요.
             </Txt>
           </View>
+        {linkNote !== '' && (
+          <Txt size={13} color={colors.bad}>
+            {linkNote}
+          </Txt>
+        )}
+
+          </>
         )}
       </ScrollView>
       <BottomNav active="settings" onNavigate={onNavigate} />
@@ -684,5 +874,18 @@ const styles = createStyles(() => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  hubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 64,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+  },
+  pageHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 }));

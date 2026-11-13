@@ -42,7 +42,7 @@
 - **가격**: **무료로 결정됨.** 유료나 인앱 구매를 쓸 때만 "계약·세금·금융 정보" 설정이 필요해요. 무료면 필요 없어요.
 - **앱 개인정보(App Privacy)**: "데이터를 수집하지 않음" 선택. 앱에 계정·분석·광고 SDK·서버 전송이 없어요.
 - **수출 규정**: 이미 `ITSAppUsesNonExemptEncryption: false`로 설정돼 있어 추가 질문이 나오지 않아요.
-- **연령 등급 설문**: `docs/store-listing.md`의 "연령 등급 설문 답변" 표대로 정직하게 답해요. **목표는 13+**(예문은 그대로 유지). 계산 결과가 13+보다 낮게 나오면 더 높은 등급을 직접 고를 수 있는지 확인하세요.
+- **연령 등급 설문**: `docs/store-listing.md`의 "연령 등급 설문 답변" 표대로 정직하게 답했고 결과는 **12+**로 확정됐어요. 예문을 바꾸면 설문을 다시 확인하세요.
 - **스크린샷**: 6.9인치 iPhone 6장, 13인치 iPad 6장. `docs/screenshots/` 사용 (실기기 캡처로 바꾸면 더 안전).
 - **헤더·검색 결과 이미지**: `docs/store-previews/header-search/`에 알파 채널 없는 PNG(RGB) 3종이 있어요. 칸이 하나(유니버설)면 `universal-5244x2950.png`(16:9, PNG만 허용), 헤더와 검색 결과가 따로면 `header-3840x1646.png`(21:9)와 `search-result-3840x2560.png`(3:2). 중요한 요소는 Apple이 정한 가운데 안전 영역 안에 있어요. 소스는 `src/header.html`, 다시 만들기는 `src/capture-header.mjs`.
 - **심사 메모(App Review Information)**: 아래 문구를 붙여 넣으세요.

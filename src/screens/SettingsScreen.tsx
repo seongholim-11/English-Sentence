@@ -10,7 +10,7 @@ import { FONT_SCALES, GOAL_MAX, GOAL_MIN, Prefs, Progress, SPEECH_RATES, THEMES 
 import { SET_SIZES } from '../data/decks';
 import { CC_BY_SA_URL, CMUDICT_LICENSE, CMUDICT_URL, FREQUENCY_WORDS_URL, OFL_URL } from '../data/licenses';
 import { Reminder, applyReminder, reminderSupported, timeLabel } from '../reminder';
-import { PRIVACY_URL } from '../links';
+import { PRIVACY_URL, SUPPORT_URL } from '../links';
 import { speak } from '../speech';
 import { colors, createStyles } from '../theme';
 
@@ -725,6 +725,15 @@ export function SettingsScreen({
           </View>
         </View>
 
+
+        <Pressable accessibilityRole="link" onPress={() => openLink(SUPPORT_URL)} style={styles.infoRow}>
+          <Txt size={15} weight={600}>
+            지원·자주 묻는 질문
+          </Txt>
+          <Txt size={15} color={colors.muted}>
+            보기
+          </Txt>
+        </Pressable>
 
         <Pressable accessibilityRole="link" onPress={() => openLink(PRIVACY_URL)} style={styles.infoRow}>
           <Txt size={15} weight={600}>

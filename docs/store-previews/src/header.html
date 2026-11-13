@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>링고루프 헤더·검색 결과 이미지</title>
+<style>
+  @font-face { font-family: 'Plex'; font-weight: 700; src: url('../../../node_modules/@expo-google-fonts/ibm-plex-sans-kr/700Bold/IBMPlexSansKR_700Bold.ttf'); }
+  @font-face { font-family: 'Plex'; font-weight: 500; src: url('../../../node_modules/@expo-google-fonts/ibm-plex-sans-kr/500Medium/IBMPlexSansKR_500Medium.ttf'); }
+  html, body { margin: 0; padding: 0; overflow: hidden; }
+  /* ?kind=header → 3840x1646 (21:9) / ?kind=search → 3840x2560 (3:2). 아트는 가운데 안전 영역 안에 둔다 */
+  body { font-family: 'Plex', sans-serif; }
+  .stage { position: relative; background: linear-gradient(135deg, #3a63ff 0%, #2F5BFF 38%, #1233C0 100%); overflow: hidden; }
+  .glow { position: absolute; inset: 0; background: radial-gradient(60% 80% at 22% 18%, rgba(255,255,255,0.22), rgba(255,255,255,0) 62%); }
+  .ring { position: absolute; }
+  .group { position: absolute; display: flex; align-items: center; color: #fff; }
+  .icon { flex: none; border-radius: 22%; box-shadow: 0 28px 70px rgba(10, 20, 90, 0.45); display: block; }
+  .name { font-weight: 700; letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
+  .tag { font-weight: 500; color: #cfe0ff; white-space: nowrap; line-height: 1.25; }
+  .tag b { font-weight: 700; color: #ffffff; }
+  .safe { position: absolute; outline: 4px dashed rgba(255, 255, 0, 0.9); display: none; }
+  body.debug .safe { display: block; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="glow"></div>
+  <svg class="ring" id="ring" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+    <g id="ringG"></g>
+  </svg>
+  <div class="group" id="group">
+    <img class="icon" id="icon" src="../../../assets/icon.png" alt="">
+    <div id="text">
+      <div class="name" id="name">링고루프</div>
+      <div class="tag" id="tag"><b>영어 회독</b> · 영단어 · 구동사 · 문장 · 대화문</div>
+    </div>
+  </div>
+  <div class="safe" id="safe"></div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const kind = ['search', 'universal'].includes(q.get('kind')) ? q.get('kind') : 'header';
+  const cfg = kind === 'header'
+    ? { W: 3840, H: 1646, safe: { w: 1646, h: 661, x: 1097, y: 493 }, icon: 400, name: 188, tag: 52, gap: 56 }
+    : kind === 'search'
+    ? { W: 3840, H: 2560, safe: { w: 2168, h: 1030, x: 836, y: 765 }, icon: 560, name: 270, tag: 74, gap: 80 }
+    : { W: 5244, H: 2950, safe: { w: 1402, h: 962, x: 1921, y: 660 }, icon: 330, name: 150, tag: 38, gap: 48 };
+  const stage = document.getElementById('stage');
+  stage.style.width = cfg.W + 'px';
+  stage.style.height = cfg.H + 'px';
+  const g = document.getElementById('group');
+  Object.assign(g.style, { left: cfg.safe.x + 'px', top: cfg.safe.y + 'px', width: cfg.safe.w + 'px', height: cfg.safe.h + 'px', gap: cfg.gap + 'px', justifyContent: 'center' });
+  const icon = document.getElementById('icon');
+  icon.style.width = icon.style.height = cfg.icon + 'px';
+  document.getElementById('name').style.fontSize = cfg.name + 'px';
+  document.getElementById('tag').style.fontSize = cfg.tag + 'px';
+  document.getElementById('tag').style.marginTop = Math.round(cfg.name * 0.2) + 'px';
+  // 배경 장식: 앱 아이콘의 순환 화살표를 크게 (안전 영역 밖까지 번져도 되는 장식)
+  const ring = document.getElementById('ring');
+  const R = Math.round(cfg.H * 1.15);
+  Object.assign(ring.style, { width: R + 'px', height: R + 'px', left: Math.round(cfg.W * 0.5 - R / 2) + 'px', top: Math.round(cfg.H * 0.5 - R / 2) + 'px', opacity: 0.12 });
+  const c = 512, r = 360, a0 = -52, a1 = a0 + 296;
+  const P = (d) => [c + r * Math.cos(d * Math.PI / 180), c + r * Math.sin(d * Math.PI / 180)];
+  const [x0, y0] = P(a0), [x1, y1] = P(a1);
+  const a = a1 * Math.PI / 180, tx = -Math.sin(a), ty = Math.cos(a), nx = Math.cos(a), ny = Math.sin(a);
+  const head = 120, half = 108;
+  const tip = [x1 + tx * head, y1 + ty * head], b1 = [x1 + nx * half, y1 + ny * half], b2 = [x1 - nx * half, y1 - ny * half];
+  document.getElementById('ringG').innerHTML =
+    `<path d="M${x0} ${y0} A${r} ${r} 0 1 1 ${x1} ${y1}" fill="none" stroke="#fff" stroke-width="96" stroke-linecap="round"/>` +
+    `<path d="M${tip} L${b1} L${b2} Z" fill="#fff" stroke="#fff" stroke-width="24" stroke-linejoin="round"/>`;
+  const safe = document.getElementById('safe');
+  Object.assign(safe.style, { left: cfg.safe.x + 'px', top: cfg.safe.y + 'px', width: cfg.safe.w + 'px', height: cfg.safe.h + 'px' });
+  if (q.get('debug')) document.body.classList.add('debug');
+  document.title = kind + ':' + cfg.W + 'x' + cfg.H;
+</script>
+</body>
+</html>

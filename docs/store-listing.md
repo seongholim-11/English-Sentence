@@ -62,7 +62,7 @@
 | --- | --- |
 | 카테고리 | 기본: 교육 / 보조: 참고 자료 |
 | 개인정보처리방침 URL | https://seongholim-11.github.io/English-Sentence/privacy/ |
-| 지원 URL | https://github.com/seongholim-11/English-Sentence/issues (공개 페이지, 이슈로 문의 가능) |
+| 지원 URL | https://seongholim-11.github.io/English-Sentence/support/ (자주 묻는 질문과 GitHub 이슈 문의 안내) |
 | 연락처 (이메일/전화) | [ ] App Store Connect에 직접 입력 (심사팀에만 보이고 앱스토어에는 공개되지 않음) |
 | 저작권 | `2026 seongholim` (GitHub 아이디와 같은 표기. 앱스토어에 보이는 판매자 이름은 Apple Developer 계정의 이름이 따로 표시됨) |
 | 가격 | 무료 (인앱 구매·광고 없음 → 계약·세금·은행 정보 설정 불필요) |

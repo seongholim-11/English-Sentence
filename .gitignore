@@ -48,3 +48,5 @@ assets/audio-samples/
 
 # 앱스토어 미리보기 확인용 큰 이미지(다시 만들 수 있음)
 docs/store-previews/pair-check*.png
+docs/store-previews/header-search/_check-*.png
+docs/store-previews/header-search/_raw-*.png

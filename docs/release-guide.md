@@ -10,7 +10,7 @@
 | iOS 번들(`expo export --platform ios`) | 성공 (Hermes 번들 약 4MB, 음성·폰트 포함 전체 약 66MB) |
 | 앱 이름 / Bundle ID | 링고루프 / `com.damadu.lingoloop` |
 | 버전 | `1.0.0`, 빌드 번호는 EAS가 자동으로 올림 (`eas.json`의 `autoIncrement`) |
-| 개인정보처리방침 | https://seongholim-11.github.io/English-Sentence/privacy/ — 열림 확인 |
+| 개인정보처리방침 / 지원 | https://seongholim-11.github.io/English-Sentence/privacy/ , .../support/ (`site/` 폴더만 GitHub Pages로 배포. 앱 웹 버전은 올리지 않음) |
 | 스토어 문구 | `docs/store-listing.md` — 글자 수 제한 안에서 최종본 |
 | 스크린샷 | `docs/screenshots/` — 웹 캡처본(주의사항은 store-listing 참고) |
 | 직접 확인 못 한 것 | 실기기 동작 전부, iOS 빌드·서명·업로드, 앱스토어 이름 중복 여부 |
@@ -36,7 +36,7 @@
 이어서 **앱 정보 / 가격 / 개인정보** 를 채워요. 값은 `docs/store-listing.md`에 있어요.
 
 - 부제, 카테고리(교육 / 참고 자료), 키워드, 설명, 프로모션 텍스트: 그대로 붙여 넣기
-- **지원 URL**: `https://github.com/seongholim-11/English-Sentence/issues` (공개 페이지여야 해요)
+- **지원 URL**: `https://seongholim-11.github.io/English-Sentence/support/` (자주 묻는 질문과 문의 안내가 있는 공개 페이지)
 - **개인정보처리방침 URL**: 위 주소
 - **저작권**: `2026 seongholim`
 - **가격**: **무료로 결정됨.** 유료나 인앱 구매를 쓸 때만 "계약·세금·금융 정보" 설정이 필요해요. 무료면 필요 없어요.
@@ -44,6 +44,7 @@
 - **수출 규정**: 이미 `ITSAppUsesNonExemptEncryption: false`로 설정돼 있어 추가 질문이 나오지 않아요.
 - **연령 등급 설문**: `docs/store-listing.md`의 "연령 등급 설문 답변" 표대로 정직하게 답해요. **목표는 13+**(예문은 그대로 유지). 계산 결과가 13+보다 낮게 나오면 더 높은 등급을 직접 고를 수 있는지 확인하세요.
 - **스크린샷**: 6.9인치 iPhone 6장, 13인치 iPad 6장. `docs/screenshots/` 사용 (실기기 캡처로 바꾸면 더 안전).
+- **헤더·검색 결과 이미지**: `docs/store-previews/header-search/`에 알파 채널 없는 PNG(RGB) 3종이 있어요. 칸이 하나(유니버설)면 `universal-5244x2950.png`(16:9, PNG만 허용), 헤더와 검색 결과가 따로면 `header-3840x1646.png`(21:9)와 `search-result-3840x2560.png`(3:2). 중요한 요소는 Apple이 정한 가운데 안전 영역 안에 있어요. 소스는 `src/header.html`, 다시 만들기는 `src/capture-header.mjs`.
 - **심사 메모(App Review Information)**: 아래 문구를 붙여 넣으세요.
 
 ```

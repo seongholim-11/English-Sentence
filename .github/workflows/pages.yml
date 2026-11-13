@@ -19,17 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build:web
-      - run: touch dist/.nojekyll
+      # 앱의 웹 버전은 올리지 않고, 개인정보처리방침·지원 페이지(site/)만 올린다
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site
 
   deploy:
     needs: build
